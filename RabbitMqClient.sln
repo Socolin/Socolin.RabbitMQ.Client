@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Socolin.RabbitMQ.Client", "Socolin.RabbitMQ.Client\Socolin.RabbitMQ.Client.csproj", "{F1CF11A1-5A82-4F5B-AA00-1EAA06F737D4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Socolin.RabbitMQ.Client.Tests.Integration", "Socolin.RabbitMQ.Client.Tests.Integration\Socolin.RabbitMQ.Client.Tests.Integration.csproj", "{113C5DFA-20F1-4E30-8531-8CC26A0FFAF9}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F1CF11A1-5A82-4F5B-AA00-1EAA06F737D4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F1CF11A1-5A82-4F5B-AA00-1EAA06F737D4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F1CF11A1-5A82-4F5B-AA00-1EAA06F737D4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F1CF11A1-5A82-4F5B-AA00-1EAA06F737D4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{113C5DFA-20F1-4E30-8531-8CC26A0FFAF9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{113C5DFA-20F1-4E30-8531-8CC26A0FFAF9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{113C5DFA-20F1-4E30-8531-8CC26A0FFAF9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{113C5DFA-20F1-4E30-8531-8CC26A0FFAF9}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
