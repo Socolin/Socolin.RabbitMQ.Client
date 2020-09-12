@@ -1,5 +1,7 @@
 # Socolin.RabbitMQ.Client
 
+[![Nuget](https://img.shields.io/nuget/v/Socolin.RabbitMQ.Client)](https://www.nuget.org/packages/Socolin.RabbitMQ.Client)
+
 A simple wrapper around [RabbitMQ.Client](https://github.com/rabbitmq/rabbitmq-dotnet-client) to make it easier to use.
 
 ## Example
