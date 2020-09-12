@@ -56,23 +56,23 @@ namespace Socolin.RabbitMQ.Client
 
 		public async Task<long> GetMessageCountInQueueAsync(string queueName)
 		{
-			var messageCount = -1L;
-
-			await Pipe.ExecutePipelineAsync(new PipeContextAction((channel, _) =>
+			const string messageCountKey = "messageCount";
+			var pipeContextAction = new PipeContextAction((channel, context) =>
 			{
 				try
 				{
-					messageCount = channel.QueueDeclarePassive(queueName).MessageCount;
+					context.Items[messageCountKey] = (long) channel.QueueDeclarePassive(queueName).MessageCount;
 				}
 				catch (OperationInterruptedException ex) when (ex.ShutdownReason.ReplyCode == 404)
 				{
-					messageCount = -1;
+					context.Items[messageCountKey] = -1L;
 				}
 
 				return Task.CompletedTask;
-			}), _actionPipeline.Value);
+			});
+			await Pipe.ExecutePipelineAsync(pipeContextAction, _actionPipeline.Value);
 
-			return messageCount;
+			return pipeContextAction.GetItemValue<long>(messageCountKey);
 		}
 
 		public async Task DeleteQueueAsync(string queueName, bool ifUnused, bool ifEmpty)
