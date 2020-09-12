@@ -19,6 +19,9 @@
 
 	<ItemGroup>
 		<None Remove="LICENSES.md" />
+		<Content Include="..\CHANGELOG.md">
+		  <Link>CHANGELOG.md</Link>
+		</Content>
 		<Content Include="LICENSE.md" PackagePath=".">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</Content>

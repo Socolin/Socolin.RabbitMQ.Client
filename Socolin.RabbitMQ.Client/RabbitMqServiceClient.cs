@@ -23,16 +23,17 @@ namespace Socolin.RabbitMQ.Client
 	public class RabbitMqServiceClient : IRabbitMqServiceClient
 	{
 		private readonly RabbitMqServiceClientOptions _options;
-		private readonly ReadOnlyMemory<IPipe> _messagePipeline;
-		private readonly ReadOnlyMemory<IPipe> _actionPipeline;
-		private readonly ReadOnlyMemory<IPipe> _consumerPipeline;
+		private readonly Lazy<ReadOnlyMemory<IPipe>> _messagePipeline;
+		private readonly Lazy<ReadOnlyMemory<IPipe>> _actionPipeline;
+		private readonly Lazy<ReadOnlyMemory<IPipe>> _consumerPipeline;
 
 		public RabbitMqServiceClient(RabbitMqServiceClientOptions options)
 		{
 			_options = options;
-			_messagePipeline = options.BuildMessagePipeline();
-			_actionPipeline = options.BuildActionPipeline();
-			_consumerPipeline = options.BuildConsumerPipeline();
+
+			_messagePipeline = new Lazy<ReadOnlyMemory<IPipe>>(options.BuildMessagePipeline);
+			_actionPipeline = new Lazy<ReadOnlyMemory<IPipe>>(options.BuildActionPipeline);
+			_consumerPipeline = new Lazy<ReadOnlyMemory<IPipe>>(options.BuildConsumerPipeline);
 		}
 
 		public async Task CreateQueueAsync(string queueName, bool durable = true, bool exclusive = false, bool autoDelete = false, IDictionary<string, object>? arguments = null)
@@ -41,7 +42,7 @@ namespace Socolin.RabbitMQ.Client
 			{
 				channel.QueueDeclare(queueName, durable, exclusive, autoDelete, arguments);
 				return Task.CompletedTask;
-			}), _actionPipeline);
+			}), _actionPipeline.Value);
 		}
 
 		public async Task PurgeQueueAsync(string queueName)
@@ -50,7 +51,7 @@ namespace Socolin.RabbitMQ.Client
 			{
 				channel.QueuePurge(queueName);
 				return Task.CompletedTask;
-			}), _actionPipeline);
+			}), _actionPipeline.Value);
 		}
 
 		public async Task<long> GetMessageCountInQueue(string queueName)
@@ -69,7 +70,7 @@ namespace Socolin.RabbitMQ.Client
 				}
 
 				return Task.CompletedTask;
-			}), _actionPipeline);
+			}), _actionPipeline.Value);
 
 			return messageCount;
 		}
@@ -80,12 +81,12 @@ namespace Socolin.RabbitMQ.Client
 			{
 				channel.QueueDelete(queueName, ifUnused, ifEmpty);
 				return Task.CompletedTask;
-			}), _actionPipeline);
+			}), _actionPipeline.Value);
 		}
 
 		public async Task EnqueueMessageAsync(string queueName, object message)
 		{
-			await Pipe.ExecutePipelineAsync(new PipeContextMessage(message) {QueueName = queueName}, _messagePipeline);
+			await Pipe.ExecutePipelineAsync(new PipeContextMessage(message) {QueueName = queueName}, _messagePipeline.Value);
 		}
 
 		public async Task<ActiveConsumer> StartListeningQueueAsync<T>(string queueName, Func<T, Task> work) where T : class
@@ -100,7 +101,7 @@ namespace Socolin.RabbitMQ.Client
 				context.Items[consumerTagKey] = consumerTag;
 				return Task.CompletedTask;
 			});
-			await Pipe.ExecutePipelineAsync(pipeContext, _consumerPipeline);
+			await Pipe.ExecutePipelineAsync(pipeContext, _consumerPipeline.Value);
 
 			return new ActiveConsumer(pipeContext.GetItemValue<string>(consumerTagKey), pipeContext.ChannelContainer!);
 		}
@@ -135,7 +136,7 @@ namespace Socolin.RabbitMQ.Client
 
 		public RabbitMqEnqueueQueueClient CreateQueueClient(string queueName)
 		{
-			var queueClientPipe = new List<IPipe>(_messagePipeline.Span.ToArray());
+			var queueClientPipe = new List<IPipe>(_messagePipeline.Value.Span.ToArray());
 			queueClientPipe.Insert(0, new QueueSelectionPipe(queueName));
 			return new RabbitMqEnqueueQueueClient(new ReadOnlyMemory<IPipe>(queueClientPipe.ToArray()));
 		}
