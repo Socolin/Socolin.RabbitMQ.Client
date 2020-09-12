@@ -52,9 +52,54 @@ The _Message Pipeline_ and _Action Pipeline_ may share same pipe elements since 
 
 ![Message Pipeline](./doc/images/message-pipeline.png)
 
+#### Retry Pipe
+
+This pipe will handle exceptions and execute the pipeline again.
+
+The default retry logic will wait the defined time between retry and will retry until either:
+- The maximum number of retry has been reach
+- The max duration has been reach
+The default logic is only handling connection error related to RabbitMQ.
+
+You can change this logic by providing another implementation of `IGenericPipe` to the `RabbitMqServiceOptionsBuilder.WithRetry()`.
+
+#### Connection Pipe
+
+The connection pipe mission is to fill the field `IPipeContext.Channel` that will be used later in next pipes.
+
+#### Serializer Pipe
+
+The serializer pipe will transform the message `object` to a `byte[]` to be store in the queue in the _Publish Pipe_.
+
+#### Custom Pipes
+
+Custom pipes can be inserted in the pipelines using `.WithCustomPipe()` or directly in `RabbitMqServiceOptions.Customs`.
+Only the pipes implementing `IGenericPipe` or `IMessagePipe` will be inserted in _Message Pipeline_.
+
+#### Publish Pipe
+
+This pipe will publish the serialized message.
+
 ### Action Pipeline
 
 ![Action Pipeline](./doc/images/action-pipeline.png)
+
+#### Retry Pipe
+
+See _Message Pipeline_
+
+#### Connection Pipe
+
+See _Message Pipeline_
+
+#### Custom Pipes
+
+Custom pipes can be inserted in the pipelines using `.WithCustomPipe()` or directly in `RabbitMqServiceOptions.Customs`.
+Only the pipes implementing `IGenericPipe` or `IActionPipe` will be inserted in _Action Pipeline_.
+
+#### Execute Pipe
+
+This pipe will execute the function `PipeContextAction.Action`
 
 ### Consumer Pipeline
 
@@ -67,31 +112,26 @@ This pipe is responsible to acknowledge successfully processed messages, and han
 - `SimpleMessageAcknowledgementPipe` This pipe is going to Ack messages when processing worked and Reject when an exception is throw.
 - `FastRetryMessageAcknowledgementPipe` This pipe is going to Ack messages when processing worked. When an exception occurs it will requeue the message with a header `RetryCount`. If the processing failed, and the message already have a header `RetryCount` with a value equal to the maximum retry count, then the message will be rejected. Rejecting the message will delete it, except if you have configured a dead letter queue on the queue. See [Dead Letter Exchanges](https://www.rabbitmq.com/dlx.html) for more details.
 
-#### Deserialize
+#### Deserialize Pipe
 
 This pipe is responsible to deserialize the message, using the given deserializer.
 
-You can also provide multiple deserializer to use the appropriate one depending on the Content-Type of the message
+You can also provide multiple deserializer to use the appropriate one depending on the Content-Type of the message.
 
 #### Custom Pipes
 
 You can push whatever logic you want here.
 
-#### Processor
+#### Processor Pipe
 
-This one is going to call the function given to the method `StartListeningQueueAsync()`
+This one is going to call the function given to the method `StartListeningQueueAsync()`.
 
 
 ## Customization
 
 ### _Message Pipeline_ and _Action Pipeline_
 
-Retry logic can be rewrite by replacing the `Retry` pipe using `.WithRetry()` on the `RabbitMqServiceOptionsBuilder`
-Custom pipes can be inserted in the pipelines using `.WithCustomPipe()` or directly in `RabbitMqServiceOptions.Customs`
-- `IGenericPipe` `IMessagePipe` will be inserted in _Message Pipeline_
-- `IGenericPipe` `IActionPipe` will be inserted in _Action Pipeline_
-
-You can use the field `Context.Items` to share value between pipes.
+You can use the field `Context.Items` to share value between pipes, and with the caller outside the pipe.
 
 ### _Consumer Pipe_
 
