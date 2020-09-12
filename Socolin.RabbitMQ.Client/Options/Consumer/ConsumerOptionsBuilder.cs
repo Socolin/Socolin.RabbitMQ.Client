@@ -39,6 +39,14 @@ namespace Socolin.RabbitMQ.Client.Options.Consumer
 			return this;
 		}
 
+		public ConsumerOptionsBuilder<T> WithFastRetryMessageAck(int maxRetryCount, string? retryCountHeaderName = null)
+		{
+			_messageAcknowledgmentPipeBuilder = new DefaultConsumerPipeBuilder<T>(() =>
+				new FastRetryMessageAcknowledgementPipe<T>(maxRetryCount, retryCountHeaderName)
+			);
+			return this;
+		}
+
 		public ConsumerOptionsBuilder<T> WitheMessageAck(IConsumerPipeBuilder<T> pipeBuilder)
 		{
 			_messageAcknowledgmentPipeBuilder = pipeBuilder;

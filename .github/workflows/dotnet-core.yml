@@ -21,6 +21,8 @@ jobs:
       run: dotnet restore
     - name: Build
       run: dotnet build --configuration Release --no-restore
+    - name: Unit Tests
+      run: dotnet test --configuration Release --no-restore --no-build Socolin.RabbitMQ.Client.Tests.Unit
     - name: Publish Socolin.RabbitMQ.Client
       uses: socolin/publish-nuget@master
       with:

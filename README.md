@@ -62,9 +62,10 @@ The _Message Pipeline_ and _Action Pipeline_ may share same pipe elements since 
 
 #### Message Ack
 
-This pipe is responsible to acknowledge successfully processed message, and handle failure (reject or retry logic).
+This pipe is responsible to acknowledge successfully processed messages, and handle failure (reject or retry logic).
 
-- `SimpleMessageAcknowledgementPipe`: This pipe is going to Ack messages when processing worked and Reject when an exception is thrown
+- `SimpleMessageAcknowledgementPipe` This pipe is going to Ack messages when processing worked and Reject when an exception is throw.
+- `FastRetryMessageAcknowledgementPipe` This pipe is going to Ack messages when processing worked. When an exception occurs it will requeue the message with a header `RetryCount`. If the processing failed, and the message already have a header `RetryCount` with a value equal to the maximum retry count, then the message will be rejected. Rejecting the message will delete it, except if you have configured a dead letter queue on the queue. See [Dead Letter Exchanges](https://www.rabbitmq.com/dlx.html) for more details.
 
 #### Deserialize
 
