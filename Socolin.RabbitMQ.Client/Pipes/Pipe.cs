@@ -7,7 +7,6 @@ namespace Socolin.RabbitMQ.Client.Pipes
 {
 	public interface IPipe
 	{
-		public Task ProcessNextAsync(IPipeContext context, ReadOnlyMemory<IPipe> pipeline);
 	}
 
 	public interface IGenericPipe : IPipe
@@ -27,7 +26,7 @@ namespace Socolin.RabbitMQ.Client.Pipes
 
 	public abstract class Pipe : IPipe
 	{
-		public Task ProcessNextAsync(IPipeContext context, ReadOnlyMemory<IPipe> pipeline)
+		protected Task ProcessNextAsync(IPipeContext context, ReadOnlyMemory<IPipe> pipeline)
 		{
 			return ExecutePipelineAsync(context, pipeline);
 		}

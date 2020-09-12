@@ -9,7 +9,6 @@ const string queueName = "some-queue-name";
 var options = new RabbitMqServiceOptionsBuilder()
 	.WithRetry(TimeSpan.FromSeconds(15), null, TimeSpan.FromSeconds(1))
 	.WithConnectionManager(_rabbitMqConnectionManager)
-	.WithDefaultDeSerializer((type, message) => JsonConvert.DeserializeObject(Encoding.UTF8.GetString(message.Span), type))
 	.WithSerializer(message => Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(message)), "application/json")
 	.Build();
 var serviceClient = new RabbitMqServiceClient(options);
@@ -18,7 +17,11 @@ var serviceClient = new RabbitMqServiceClient(options);
 await serviceClient.CreateQueueAsync(queueName);
 
 // Listen to queue (Auto reconnect is enabled)
-var activeConsumer =  await serviceClient.StartListeningQueueAsync<string>(queueName, message =>
+var consumerOptions = new ConsumerOptionsBuilder<string>()
+    .WithDefaultDeSerializer(message => JsonConvert.DeserializeObject<string>(Encoding.UTF8.GetString(message.Span)))
+    .WithSimpleMessageAck()
+    .Build();
+var activeConsumer =  await serviceClient.StartListeningQueueAsync(queueName, consumerOptions, message =>
 {
     Console.WriteLine(message);
     return Task.CompletedTask;
@@ -35,17 +38,15 @@ await queueClient.EnqueueMessageAsync("some-other-message");
 activeConsumer.Cancel();
 ```
 
-## Customization
+## Architecture
 
 Internally the library is using pipeline pattern.
 
 - When publishing a message it's using _Message Pipeline_
 - When executing an action (Create/Delete/Purge a queue or start consuming it) it's using the _Action Pipeline_
+- When processing a message received from a queue it's using the _Consumer Pipeline_
 
-Retry logic can be rewrite by replacing the `Retry` pipe using `.WithRetry()` on the `RabbitMqServiceOptionsBuilder`
-Custom pipes can be inserted in the pipes using `.WithCustomPipe()` or directly in `RabbitMqServiceOptions.Customs`
-- `IGenericPipe` `IMessagePipe` will be inserted in _Message Pipeline_
-- `IGenericPipe` `IActionPipe` will be inserted in _Action Pipeline_
+The _Message Pipeline_ and _Action Pipeline_ may share same pipe elements since they work mostly the same way for the same thing.
 
 ### Message Pipeline
 
@@ -54,4 +55,46 @@ Custom pipes can be inserted in the pipes using `.WithCustomPipe()` or directly 
 ### Action Pipeline
 
 ![Action Pipeline](./doc/images/action-pipeline.png)
+
+### Consumer Pipeline
+
+![Consumer Pipeline](./doc/images/consumer-pipeline.png)
+
+#### Message Ack
+
+This pipe is responsible to acknowledge successfully processed message, and handle failure (reject or retry logic).
+
+- `SimpleMessageAcknowledgementPipe`: This pipe is going to Ack messages when processing worked and Reject when an exception is thrown
+
+#### Deserialize
+
+This pipe is responsible to deserialize the message, using the given deserializer.
+
+You can also provide multiple deserializer to use the appropriate one depending on the Content-Type of the message
+
+#### Custom Pipes
+
+You can push whatever logic you want here.
+
+#### Processor
+
+This one is going to call the function given to the method `StartListeningQueueAsync()`
+
+
+## Customization
+
+### _Message Pipeline_ and _Action Pipeline_
+
+Retry logic can be rewrite by replacing the `Retry` pipe using `.WithRetry()` on the `RabbitMqServiceOptionsBuilder`
+Custom pipes can be inserted in the pipelines using `.WithCustomPipe()` or directly in `RabbitMqServiceOptions.Customs`
+- `IGenericPipe` `IMessagePipe` will be inserted in _Message Pipeline_
+- `IGenericPipe` `IActionPipe` will be inserted in _Action Pipeline_
+
+You can use the field `Context.Items` to share value between pipes.
+
+### _Consumer Pipe_
+
+Custom pipes can be inserted in the pipeline by adding them into `ConsumerOptions.Customs`  or by using the builder `ConsumerOptionsBuilder.WithCustomPipe()`
+
+You can use the field `Context.Items` to share value between pipes and with the processor function.
 

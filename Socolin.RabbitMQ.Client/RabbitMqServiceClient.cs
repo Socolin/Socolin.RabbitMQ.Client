@@ -4,7 +4,10 @@ using System.Threading.Tasks;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using RabbitMQ.Client.Exceptions;
+using Socolin.RabbitMQ.Client.ConsumerPipes;
+using Socolin.RabbitMQ.Client.ConsumerPipes.Context;
 using Socolin.RabbitMQ.Client.Options;
+using Socolin.RabbitMQ.Client.Options.Consumer;
 using Socolin.RabbitMQ.Client.Pipes;
 using Socolin.RabbitMQ.Client.Pipes.Context;
 
@@ -16,21 +19,18 @@ namespace Socolin.RabbitMQ.Client
 		Task PurgeQueueAsync(string queueName);
 		Task DeleteQueueAsync(string queueName, bool ifUnused, bool ifEmpty);
 		Task EnqueueMessageAsync(string queueName, object message);
-		Task<ActiveConsumer> StartListeningQueueAsync<T>(string queueName, Func<T, Task> work) where T : class;
+		Task<ActiveConsumer> StartListeningQueueAsync<T>(string queueName, ConsumerOptions<T> consumerOptions, Func<T, Dictionary<string, object>, Task> messageProcessor) where T : class;
 		RabbitMqEnqueueQueueClient CreateQueueClient(string queueName);
 	}
 
 	public class RabbitMqServiceClient : IRabbitMqServiceClient
 	{
-		private readonly RabbitMqServiceClientOptions _options;
 		private readonly Lazy<ReadOnlyMemory<IPipe>> _messagePipeline;
 		private readonly Lazy<ReadOnlyMemory<IPipe>> _actionPipeline;
 		private readonly Lazy<ReadOnlyMemory<IPipe>> _consumerPipeline;
 
 		public RabbitMqServiceClient(RabbitMqServiceClientOptions options)
 		{
-			_options = options;
-
 			_messagePipeline = new Lazy<ReadOnlyMemory<IPipe>>(options.BuildMessagePipeline);
 			_actionPipeline = new Lazy<ReadOnlyMemory<IPipe>>(options.BuildActionPipeline);
 			_consumerPipeline = new Lazy<ReadOnlyMemory<IPipe>>(options.BuildConsumerPipeline);
@@ -54,7 +54,7 @@ namespace Socolin.RabbitMQ.Client
 			}), _actionPipeline.Value);
 		}
 
-		public async Task<long> GetMessageCountInQueue(string queueName)
+		public async Task<long> GetMessageCountInQueueAsync(string queueName)
 		{
 			var messageCount = -1L;
 
@@ -89,15 +89,14 @@ namespace Socolin.RabbitMQ.Client
 			await Pipe.ExecutePipelineAsync(new PipeContextMessage(message) {QueueName = queueName}, _messagePipeline.Value);
 		}
 
-		public async Task<ActiveConsumer> StartListeningQueueAsync<T>(string queueName, Func<T, Task> work) where T : class
+		public async Task<ActiveConsumer> StartListeningQueueAsync<T>(string queueName, ConsumerOptions<T> consumerOptions, Func<T, Dictionary<string, object>, Task> messageProcessor) where T : class
 		{
-			if (_options.Deserialization == null)
-				throw new InvalidRabbitMqOptionException("Please provide a deserializer in options before listening to a queue");
+			var consumerPipeline = consumerOptions.BuildPipeline();
 
 			const string consumerTagKey = "consumerTag";
 			var pipeContext = new PipeContextAction((channel, context) =>
 			{
-				var consumerTag = BeginConsumeQueue(channel, queueName, work);
+				var consumerTag = BeginConsumeQueue(channel, queueName, consumerPipeline, messageProcessor);
 				context.Items[consumerTagKey] = consumerTag;
 				return Task.CompletedTask;
 			});
@@ -106,29 +105,13 @@ namespace Socolin.RabbitMQ.Client
 			return new ActiveConsumer(pipeContext.GetItemValue<string>(consumerTagKey), pipeContext.ChannelContainer!);
 		}
 
-		private string BeginConsumeQueue<T>(IModel channel, string queueName, Func<T, Task> work) where T : class
+		private string BeginConsumeQueue<T>(IModel channel, string queueName, ReadOnlyMemory<IConsumerPipe<T>> consumerPipeline, Func<T, Dictionary<string, object>, Task> messageProcessor) where T : class
 		{
 			var consumer = new AsyncEventingBasicConsumer(channel);
 			consumer.Received += async (_, message) =>
 			{
-				object deserialized;
-				if (_options.Deserialization!.Deserializers.ContainsKey(message.BasicProperties.ContentType))
-					deserialized = _options.Deserialization.Deserializers[message.BasicProperties.ContentType](typeof(T), message.Body);
-				else
-					deserialized = _options.Deserialization.DefaultDeserializer(typeof(T), message.Body);
-
-				try
-				{
-					await work((T) deserialized);
-					channel.BasicAck(message.DeliveryTag, false);
-				}
-				catch
-				{
-					// FIXME: Retry logic (use pipe pattern ?)
-					// Make this configurable
-					// Requeue message immediatly ?
-					// Delay ?
-				}
+				var consumerPipeContext = new ConsumerPipeContext<T>(channel, message, messageProcessor);
+				await ConsumerPipe<T>.ExecutePipelineAsync(consumerPipeContext, consumerPipeline);
 			};
 
 			return channel.BasicConsume(queueName, false, consumer);

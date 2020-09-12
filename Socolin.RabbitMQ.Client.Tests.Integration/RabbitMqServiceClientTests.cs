@@ -9,6 +9,7 @@ using Newtonsoft.Json;
 using NUnit.Framework;
 using RabbitMQ.Client.Exceptions;
 using Socolin.RabbitMQ.Client.Options;
+using Socolin.RabbitMQ.Client.Options.Consumer;
 
 namespace Socolin.RabbitMQ.Client.Tests.Integration
 {
@@ -28,7 +29,6 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 			var options = new RabbitMqServiceOptionsBuilder()
 				.WithRetry(TimeSpan.FromSeconds(15), null, TimeSpan.FromSeconds(1))
 				.WithConnectionManager(_rabbitMqConnectionManager)
-				.WithDefaultDeSerializer((type, message) => JsonConvert.DeserializeObject(Encoding.UTF8.GetString(message.Span), type))
 				.WithSerializer(message => Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(message)), "application/json")
 				.Build();
 			_serviceClient = new RabbitMqServiceClient(options);
@@ -115,7 +115,7 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 			channelContainer.Channel.BasicPublish("", _queueName, true, null, new byte[] {0x42});
 			channelContainer.Channel.BasicPublish("", _queueName, true, null, new byte[] {0x42});
 
-			var count = await _serviceClient.GetMessageCountInQueue(_queueName);
+			var count = await _serviceClient.GetMessageCountInQueueAsync(_queueName);
 
 			count.Should().Be(2);
 		}
@@ -123,7 +123,7 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 		[Test]
 		public async Task CanGetMessageCount_OnNonExistentQueue()
 		{
-			var count = await _serviceClient.GetMessageCountInQueue(_queueName);
+			var count = await _serviceClient.GetMessageCountInQueueAsync(_queueName);
 			count.Should().Be(-1);
 		}
 
@@ -161,7 +161,12 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 			await _serviceClient.CreateQueueAsync(_queueName);
 
 			var actualMessages = new List<string>();
-			await _serviceClient.StartListeningQueueAsync<string>(_queueName, message =>
+			var consumerOptions = new ConsumerOptionsBuilder<string>()
+				.WithDefaultDeSerializer(message => JsonConvert.DeserializeObject<string>(Encoding.UTF8.GetString(message.Span)))
+				.WithSimpleMessageAck()
+				.Build();
+
+			await _serviceClient.StartListeningQueueAsync(_queueName, consumerOptions, (message, _) =>
 			{
 				actualMessages.Add(message);
 				semaphore.Release();
@@ -170,9 +175,10 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 
 			await semaphore.WaitAsync();
 			await _serviceClient.EnqueueMessageAsync(_queueName, randomMessage);
-			await semaphore.WaitAsync(TimeSpan.FromSeconds(20));
+			await semaphore.WaitAsync(TimeSpan.FromSeconds(10));
 
 			actualMessages.Should().BeEquivalentTo(randomMessage.ToString());
+			(await _serviceClient.GetMessageCountInQueueAsync(_queueName)).Should().Be(0);
 		}
 
 		[Test]
@@ -186,7 +192,11 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 			await _serviceClient.CreateQueueAsync(_queueName);
 
 			var actualMessages = new List<string>();
-			await _serviceClient.StartListeningQueueAsync<string>(_queueName, message =>
+			var consumerOptions = new ConsumerOptionsBuilder<string>()
+				.WithDefaultDeSerializer(message => JsonConvert.DeserializeObject<string>(Encoding.UTF8.GetString(message.Span)))
+				.WithSimpleMessageAck()
+				.Build();
+			await _serviceClient.StartListeningQueueAsync(_queueName, consumerOptions, (message, _) =>
 			{
 				actualMessages.Add(message);
 				semaphore.Release();
@@ -213,7 +223,11 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 			await _serviceClient.CreateQueueAsync(_queueName);
 
 			var actualMessages = new List<string>();
-			var activeConsumer =  await _serviceClient.StartListeningQueueAsync<string>(_queueName, message =>
+			var consumerOptions = new ConsumerOptionsBuilder<string>()
+				.WithDefaultDeSerializer(message => JsonConvert.DeserializeObject<string>(Encoding.UTF8.GetString(message.Span)))
+				.WithSimpleMessageAck()
+				.Build();
+			var activeConsumer = await _serviceClient.StartListeningQueueAsync(_queueName, consumerOptions, (message, _) =>
 			{
 				actualMessages.Add(message);
 				semaphore.Release();
@@ -229,5 +243,42 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 
 			actualMessages.Should().HaveCount(1);
 		}
+
+
+		[Test]
+		public async Task CanListenToMultipleMessages()
+		{
+			var randomMessage1 = Guid.NewGuid().ToString();
+			var randomMessage2 = Guid.NewGuid().ToString();
+			var randomMessage3 = Guid.NewGuid().ToString();
+			var semaphore = new SemaphoreSlim(1);
+
+			await _serviceClient.CreateQueueAsync(_queueName);
+
+			var actualMessages = new List<string>();
+			var consumerOptions = new ConsumerOptionsBuilder<string>()
+				.WithSimpleMessageAck()
+				.WithDefaultDeSerializer(message => JsonConvert.DeserializeObject<string>(Encoding.UTF8.GetString(message.Span)))
+				.Build();
+
+			await _serviceClient.StartListeningQueueAsync(_queueName, consumerOptions, (message, _) =>
+			{
+				actualMessages.Add(message);
+				semaphore.Release();
+				return Task.CompletedTask;
+			});
+
+			await semaphore.WaitAsync();
+			await _serviceClient.EnqueueMessageAsync(_queueName, randomMessage1);
+			await semaphore.WaitAsync(TimeSpan.FromSeconds(10));
+			await _serviceClient.EnqueueMessageAsync(_queueName, randomMessage2);
+			await semaphore.WaitAsync(TimeSpan.FromSeconds(1));
+			await _serviceClient.EnqueueMessageAsync(_queueName, randomMessage3);
+			await semaphore.WaitAsync(TimeSpan.FromSeconds(1));
+
+			actualMessages.Should().BeEquivalentTo(randomMessage1, randomMessage2, randomMessage3);
+			(await _serviceClient.GetMessageCountInQueueAsync(_queueName)).Should().Be(0);
+		}
+
 	}
 }

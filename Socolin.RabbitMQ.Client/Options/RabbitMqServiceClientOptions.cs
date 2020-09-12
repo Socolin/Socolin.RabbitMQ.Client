@@ -10,7 +10,6 @@ namespace Socolin.RabbitMQ.Client.Options
 	{
 		public IRabbitMqConnectionManager RabbitMqConnectionManager { get; set; }
 		public SerializationOption? Serialization { get; set; }
-		public DeserializationGenericPipeOption? Deserialization { get; set; }
 		public IGenericPipeBuilder? Retry { get; set; }
 		public List<IPipeBuilder> CustomPipes { get; set; } = new List<IPipeBuilder>();
 
@@ -38,7 +37,7 @@ namespace Socolin.RabbitMQ.Client.Options
 					if (builder is IMessagePipeBuilder messagePipeBuilder)
 						return messagePipeBuilder.BuildPipe() as IPipe;
 					if (builder is IGenericPipeBuilder genericPipeBuilder)
-						return genericPipeBuilder.BuildPipe() as IPipe;;
+						return genericPipeBuilder.BuildPipe() as IPipe;
 					throw new NotSupportedException($"Builder {builder} is not supported");
 				})
 			);
@@ -61,7 +60,7 @@ namespace Socolin.RabbitMQ.Client.Options
 					if (builder is IActionPipeBuilder messagePipeBuilder)
 						return messagePipeBuilder.BuildPipe() as IPipe;
 					if (builder is IGenericPipeBuilder genericPipeBuilder)
-						return genericPipeBuilder.BuildPipe() as IPipe;;
+						return genericPipeBuilder.BuildPipe() as IPipe;
 					throw new NotSupportedException($"Builder {builder} is not supported");
 				})
 			);

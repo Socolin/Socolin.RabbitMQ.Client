@@ -1,6 +1,7 @@
 1.1
 
 - Create pipelines only when they are needed. So it does not throw because Serializer is missing when creating a client to listen to a queue, for example.
+- Rework how to consume messages from a queue. It now uses pipeline pattern. See documentation for more details.
 
 1.0
 
