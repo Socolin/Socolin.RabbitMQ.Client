@@ -1,6 +1,7 @@
 1.2
 
 - Allow specifying ExchangeName/RoutingKey when publishing a message as an alternative to QueueName.
+- Add new `CreateQueueOptionBuilder` to simplify how to create a queue with custom arguments.
 
 1.1
 

@@ -19,7 +19,15 @@ var options = new RabbitMqServiceOptionsBuilder()
 var serviceClient = new RabbitMqServiceClient(options);
 
 // Create a queue
-await serviceClient.CreateQueueAsync(queueName);
+await serviceClient.CreateQueueAsync(queueName + "-Error", true);
+
+// Create a queue with options builder
+var createQueueOption = new CreateQueueOptionBuilder(QueueType.Classic)
+    .Durable()
+    .WithDeadLetterExchange(RabbitMqConstants.DefaultExchangeName)
+    .WithDeadLetterRoutingKey(queueName + "-Error")
+    .Build();
+await serviceClient.CreateQueueAsync(queueName, createQueueOption);
 
 // Listen to queue (Auto reconnect is enabled)
 var consumerOptions = new ConsumerOptionsBuilder<string>()
@@ -42,6 +50,13 @@ await queueClient.EnqueueMessageAsync("some-other-message");
 
 // Cancel listening
 activeConsumer.Cancel();
+
+// Purge the queue
+await serviceClient.PurgeQueueAsync(queueName);
+
+// Delete a queue
+await serviceClient.DeleteQueueAsync(queueName, false, false);
+await serviceClient.DeleteQueueAsync(queueName + "-Error", false, false);
 ```
 
 ## Architecture

@@ -15,6 +15,7 @@ namespace Socolin.RabbitMQ.Client
 {
 	public interface IRabbitMqServiceClient
 	{
+		Task CreateQueueAsync(string queueName, CreateQueueOptions options);
 		Task CreateQueueAsync(string queueName, bool durable = true, bool exclusive = false, bool autoDelete = false, IDictionary<string, object>? arguments = null);
 		Task PurgeQueueAsync(string queueName);
 		Task DeleteQueueAsync(string queueName, bool ifUnused, bool ifEmpty);
@@ -36,6 +37,11 @@ namespace Socolin.RabbitMQ.Client
 			_messagePipeline = new Lazy<ReadOnlyMemory<IClientPipe>>(options.BuildMessagePipeline);
 			_actionPipeline = new Lazy<ReadOnlyMemory<IClientPipe>>(options.BuildActionPipeline);
 			_consumerPipeline = new Lazy<ReadOnlyMemory<IClientPipe>>(options.BuildConsumerPipeline);
+		}
+
+		public Task CreateQueueAsync(string queueName, CreateQueueOptions options)
+		{
+			return CreateQueueAsync(queueName, options.Durable, options.Exclusive, options.AutoDelete, options.Arguments);
 		}
 
 		public async Task CreateQueueAsync(string queueName, bool durable = true, bool exclusive = false, bool autoDelete = false, IDictionary<string, object>? arguments = null)
