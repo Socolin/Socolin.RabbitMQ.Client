@@ -24,7 +24,7 @@ namespace Socolin.RabbitMQ.Client.Example
 			await serviceClient.CreateQueueAsync(queueName + "-Error", true);
 
 			// Create a queue with options builder
-			var createQueueOption = new CreateQueueOptionBuilder(QueueType.Classic)
+			var createQueueOption = new CreateQueueOptionsBuilder(QueueType.Classic)
 				.Durable()
 				.WithDeadLetterExchange(RabbitMqConstants.DefaultExchangeName)
 				.WithDeadLetterRoutingKey(queueName + "-Error")

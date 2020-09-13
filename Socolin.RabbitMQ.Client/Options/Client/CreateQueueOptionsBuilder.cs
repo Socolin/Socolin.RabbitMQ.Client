@@ -18,7 +18,7 @@ namespace Socolin.RabbitMQ.Client.Options.Client
 		RejectPublishDlx,
 	}
 
-	public class CreateQueueOptionBuilder
+	public class CreateQueueOptionsBuilder
 	{
 		private readonly QueueType _queueType;
 		private bool _durable;
@@ -36,7 +36,7 @@ namespace Socolin.RabbitMQ.Client.Options.Client
 		private bool? _lazyMode;
 		private string? _masterLocator;
 
-		public CreateQueueOptionBuilder(QueueType queueType)
+		public CreateQueueOptionsBuilder(QueueType queueType)
 		{
 			_queueType = queueType;
 		}
@@ -47,7 +47,7 @@ namespace Socolin.RabbitMQ.Client.Options.Client
 		/// Messages published as transient will be discarded during recovery, even if they were stored in durable queues
 		/// <see href="https://www.rabbitmq.com/queues.html"/>
 		/// </summary>
-		public CreateQueueOptionBuilder Durable()
+		public CreateQueueOptionsBuilder Durable()
 		{
 			_durable = true;
 			return this;
@@ -59,7 +59,7 @@ namespace Socolin.RabbitMQ.Client.Options.Client
 		/// Messages in transient queues will also be discarded.
 		/// <see href="https://www.rabbitmq.com/queues.html"/>
 		/// </summary>
-		public CreateQueueOptionBuilder Transient()
+		public CreateQueueOptionsBuilder Transient()
 		{
 			_durable = false;
 			return this;
@@ -72,7 +72,7 @@ namespace Socolin.RabbitMQ.Client.Options.Client
 		/// </summary>
 		/// <param name="autoDelete"></param>
 		/// <returns></returns>
-		public CreateQueueOptionBuilder AutoDelete(bool autoDelete = true)
+		public CreateQueueOptionsBuilder AutoDelete(bool autoDelete = true)
 		{
 			_autoDelete = autoDelete;
 			return this;
@@ -84,7 +84,7 @@ namespace Socolin.RabbitMQ.Client.Options.Client
 		/// </summary>
 		/// <param name="exclusive"></param>
 		/// <returns></returns>
-		public CreateQueueOptionBuilder Exclusive(bool exclusive = true)
+		public CreateQueueOptionsBuilder Exclusive(bool exclusive = true)
 		{
 			_exclusive = exclusive;
 			return this;
@@ -95,7 +95,7 @@ namespace Socolin.RabbitMQ.Client.Options.Client
 		/// </summary>
 		/// <param name="expiresMilliseconds"></param>
 		/// <returns></returns>
-		public CreateQueueOptionBuilder WithExpire(int expiresMilliseconds)
+		public CreateQueueOptionsBuilder WithExpire(int expiresMilliseconds)
 		{
 			_queueExpiresMilliseconds = expiresMilliseconds;
 			return this;
@@ -106,7 +106,7 @@ namespace Socolin.RabbitMQ.Client.Options.Client
 		/// </summary>
 		/// <param name="ttlMilliseconds"></param>
 		/// <returns></returns>
-		public CreateQueueOptionBuilder WithMessageTtl(int ttlMilliseconds)
+		public CreateQueueOptionsBuilder WithMessageTtl(int ttlMilliseconds)
 		{
 			_messageTtlMilliseconds = ttlMilliseconds;
 			return this;
@@ -117,7 +117,7 @@ namespace Socolin.RabbitMQ.Client.Options.Client
 		/// </summary>
 		/// <param name="maxLength"></param>
 		/// <returns></returns>
-		public CreateQueueOptionBuilder WithMaxLength(int maxLength)
+		public CreateQueueOptionsBuilder WithMaxLength(int maxLength)
 		{
 			_maxLength = maxLength;
 			return this;
@@ -128,7 +128,7 @@ namespace Socolin.RabbitMQ.Client.Options.Client
 		/// </summary>
 		/// <param name="maxLengthByte"></param>
 		/// <returns></returns>
-		public CreateQueueOptionBuilder WithMaxLengthByte(int maxLengthByte)
+		public CreateQueueOptionsBuilder WithMaxLengthByte(int maxLengthByte)
 		{
 			_maxLengthByte = maxLengthByte;
 			return this;
@@ -139,7 +139,7 @@ namespace Socolin.RabbitMQ.Client.Options.Client
 		/// queue is reached. Valid values are drop-head, reject-publish or reject-publish-dlx. The quorum queue type only supports drop-head.
 		/// </summary>
 		/// <returns></returns>
-		public CreateQueueOptionBuilder WithOverflowBehaviour(OverflowBehaviour overflowBehaviour)
+		public CreateQueueOptionsBuilder WithOverflowBehaviour(OverflowBehaviour overflowBehaviour)
 		{
 			if (_queueType == QueueType.Quorum && overflowBehaviour != OverflowBehaviour.DropHead)
 				throw new InvalidBuilderOptionsException("The quorum queue type only supports drop-head.");
@@ -151,7 +151,7 @@ namespace Socolin.RabbitMQ.Client.Options.Client
 		/// Optional name of an exchange to which messages will be republished if they are rejected or expire.
 		/// </summary>
 		/// <returns></returns>
-		public CreateQueueOptionBuilder WithDeadLetterExchange(string exchangeName)
+		public CreateQueueOptionsBuilder WithDeadLetterExchange(string exchangeName)
 		{
 			_deadLetterExchangeName = exchangeName;
 			return this;
@@ -163,7 +163,7 @@ namespace Socolin.RabbitMQ.Client.Options.Client
 		/// </summary>
 		/// <param name="routingKey"></param>
 		/// <returns></returns>
-		public CreateQueueOptionBuilder WithDeadLetterRoutingKey(string routingKey)
+		public CreateQueueOptionsBuilder WithDeadLetterRoutingKey(string routingKey)
 		{
 			_deadLetterRoutingKey = routingKey;
 			return this;
@@ -174,7 +174,7 @@ namespace Socolin.RabbitMQ.Client.Options.Client
 		/// consumer in case the active one is cancelled or dies.
 		/// </summary>
 		/// <returns></returns>
-		public CreateQueueOptionBuilder WithSingleActiveConsumer()
+		public CreateQueueOptionsBuilder WithSingleActiveConsumer()
 		{
 			_singleActiveConsumer = true;
 			return this;
@@ -185,7 +185,7 @@ namespace Socolin.RabbitMQ.Client.Options.Client
 		/// if not set, the queue will not support message priorities.
 		/// </summary>
 		/// <returns></returns>
-		public CreateQueueOptionBuilder WithMaximumNumberOfPriorityLevel(byte maxPriorityLevel)
+		public CreateQueueOptionsBuilder WithMaximumNumberOfPriorityLevel(byte maxPriorityLevel)
 		{
 			_maxPriorityLevel = maxPriorityLevel;
 			return this;
@@ -196,7 +196,7 @@ namespace Socolin.RabbitMQ.Client.Options.Client
 		/// if not set, the queue will keep an in-memory cache to deliver messages as fast as possible.
 		/// </summary>
 		/// <returns></returns>
-		public CreateQueueOptionBuilder WithLazyMode()
+		public CreateQueueOptionsBuilder WithLazyMode()
 		{
 			_lazyMode = true;
 			return this;
@@ -207,7 +207,7 @@ namespace Socolin.RabbitMQ.Client.Options.Client
 		/// declared on a cluster of nodes.
 		/// </summary>
 		/// <returns></returns>
-		public CreateQueueOptionBuilder WithMasterLocator(string locator)
+		public CreateQueueOptionsBuilder WithMasterLocator(string locator)
 		{
 			_masterLocator = locator;
 			return this;
