@@ -92,6 +92,13 @@ The connection pipe mission is to fill the field `IPipeContext.Channel` that wil
 
 The serializer pipe will transform the message `object` to a `byte[]` to be store in the queue in the _Publish Pipe_.
 
+#### Per-Message TTL Pipe
+
+This pipe is optional. It will specify expiration on messages.
+
+The expiration can be defined when creating the pipe option with `WithPerMessageTtl()` or it can be specified when publishing a message using the `contextItems` parameters
+by defining  the key `MessageTtlClientPipe.ContextItemExpirationKey`. If no expiration is define in either `WithPerMessageTtl()` nor `MessageTtlClientPipe.ContextItemExpirationKey` the message will not have any expiration set.
+
 #### Custom Pipes
 
 Custom pipes can be inserted in the pipelines using `.WithCustomPipe()` or directly in `RabbitMqServiceOptions.Customs`.
