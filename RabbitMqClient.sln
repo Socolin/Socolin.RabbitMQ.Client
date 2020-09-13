@@ -6,6 +6,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Socolin.RabbitMQ.Client.Tes
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Socolin.RabbitMQ.Client.Tests.Unit", "Socolin.RabbitMQ.Client.Tests.Unit\Socolin.RabbitMQ.Client.Tests.Unit.csproj", "{11362F18-BD39-4FDB-B880-EEDC5F5D15BA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Socolin.RabbitMQ.Client.Example", "Socolin.RabbitMQ.Client.Example\Socolin.RabbitMQ.Client.Example.csproj", "{8DE69B61-69B0-48EE-8A6F-908C0F4ACBC8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +26,9 @@ Global
 		{11362F18-BD39-4FDB-B880-EEDC5F5D15BA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{11362F18-BD39-4FDB-B880-EEDC5F5D15BA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{11362F18-BD39-4FDB-B880-EEDC5F5D15BA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8DE69B61-69B0-48EE-8A6F-908C0F4ACBC8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8DE69B61-69B0-48EE-8A6F-908C0F4ACBC8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8DE69B61-69B0-48EE-8A6F-908C0F4ACBC8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8DE69B61-69B0-48EE-8A6F-908C0F4ACBC8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
