@@ -139,6 +139,7 @@ This pipe is responsible to acknowledge successfully processed messages, and han
 
 - `SimpleMessageAcknowledgementPipe` This pipe is going to Ack messages when processing worked and Reject when an exception is throw.
 - `FastRetryMessageAcknowledgementPipe` This pipe is going to Ack messages when processing worked. When an exception occurs it will requeue the message with a header `RetryCount`. If the processing failed, and the message already have a header `RetryCount` with a value equal to the maximum retry count, then the message will be rejected. Rejecting the message will delete it, except if you have configured a dead letter queue on the queue. See [Dead Letter Exchanges](https://www.rabbitmq.com/dlx.html) for more details.
+- `DelayedRetryMessageAcknowledgementPipe` This pipe is working like `FastRetryMessageAcknowledgementPipe` but instead of immediately retry failed messages it delays them. To achieve this, the pipe enqueue failed message with a Per-Message TTL (an expiration) in another queue. This queue *must* have the first queue configured as dead letter queue (you can use the helper `DelayedRetryMessageAcknowledgementPipe.CreateDelayQueueAsync` for that), so when messages expire they are enqueue by RabbitMQ server into the first queue.
 
 #### Deserialize Pipe
 

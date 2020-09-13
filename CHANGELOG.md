@@ -4,6 +4,7 @@
 - Add new `CreateQueueOptionBuilder` to simplify how to create a queue with custom arguments.
 - Allow specifying `contextItems` when enqueueing a message. This databag is available through the `IPipeContext.Items` in pipes.
 - Add a new option to configure message expiration
+- Add new _Consumer Pipe_ `DelayedRetryMessageAcknowledgementPipe` to retry failed message with a delay between retry
 
 1.1
 
