@@ -18,6 +18,8 @@ namespace Socolin.RabbitMQ.Client.Options.Client
 		private string? _contentType;
 
 		private readonly IList<IClientPipeBuilder> _customPipeBuilders = new List<IClientPipeBuilder>();
+		private bool _usePerMessageTtl;
+		private int? _perMessageTTl;
 
 		public RabbitMqServiceOptionsBuilder WithConnectionManager(IRabbitMqConnectionManager connectionManager)
 		{
@@ -47,6 +49,21 @@ namespace Socolin.RabbitMQ.Client.Options.Client
 		{
 			_serializer = serializer;
 			_contentType = contentType;
+			return this;
+		}
+
+		public RabbitMqServiceOptionsBuilder WithPerMessageTtl(int? ttlMilliseconds = null)
+		{
+			if (ttlMilliseconds == null)
+			{
+				_usePerMessageTtl = true;
+				return this;
+			}
+
+			if (ttlMilliseconds < 0)
+				throw new ArgumentOutOfRangeException(nameof(ttlMilliseconds));
+			_perMessageTTl = ttlMilliseconds;
+			_usePerMessageTtl = true;
 			return this;
 		}
 
@@ -85,6 +102,8 @@ namespace Socolin.RabbitMQ.Client.Options.Client
 			else if (_delayBetweenRetry != null)
 				options.Retry = new RetryClientPipeBuilder(_maxRetryDuration, _maxRetryCount, _delayBetweenRetry.Value);
 
+			if (_usePerMessageTtl)
+				options.PerMessageTtl = new PerMessageTtlOption(_perMessageTTl);
 			options.CustomPipes.AddRange(_customPipeBuilders);
 
 			return options;
