@@ -19,8 +19,8 @@ namespace Socolin.RabbitMQ.Client
 		Task CreateQueueAsync(string queueName, bool durable = true, bool exclusive = false, bool autoDelete = false, IDictionary<string, object>? arguments = null);
 		Task PurgeQueueAsync(string queueName);
 		Task DeleteQueueAsync(string queueName, bool ifUnused, bool ifEmpty);
-		Task EnqueueMessageAsync(string queueName, object message);
-		Task EnqueueMessageToExchangeAsync(string exchangeName, string routingKey, object message);
+		Task EnqueueMessageAsync(string queueName, object message, Dictionary<string, object>? contextItems = null);
+		Task EnqueueMessageToExchangeAsync(string exchangeName, string routingKey, object message, Dictionary<string, object>? contextItems = null);
 		Task<ActiveConsumer> StartListeningQueueAsync<T>(string queueName, ConsumerOptions<T> consumerOptions, Func<T, Dictionary<string, object>, Task> messageProcessor) where T : class;
 		RabbitMqEnqueueQueueClient CreateQueueClient(string queueName);
 		RabbitMqEnqueueQueueClient CreateQueueClient(string exchangeName, string routingKey);
@@ -92,14 +92,22 @@ namespace Socolin.RabbitMQ.Client
 			}), _actionPipeline.Value);
 		}
 
-		public async Task EnqueueMessageAsync(string queueName, object message)
+		public async Task EnqueueMessageAsync(string queueName, object message, Dictionary<string, object>? contextItems = null)
 		{
-			await ClientPipe.ExecutePipelineAsync(new ClientPipeContextMessage(message) {ExchangeName = RabbitMqConstants.DefaultExchangeName, RoutingKey = queueName}, _messagePipeline.Value);
+			await ClientPipe.ExecutePipelineAsync(new ClientPipeContextMessage(message, contextItems)
+			{
+				ExchangeName = RabbitMqConstants.DefaultExchangeName,
+				RoutingKey = queueName
+			}, _messagePipeline.Value);
 		}
 
-		public async Task EnqueueMessageToExchangeAsync(string exchangeName, string routingKey, object message)
+		public async Task EnqueueMessageToExchangeAsync(string exchangeName, string routingKey, object message, Dictionary<string, object>? contextItems = null)
 		{
-			await ClientPipe.ExecutePipelineAsync(new ClientPipeContextMessage(message) {ExchangeName = exchangeName, RoutingKey = routingKey}, _messagePipeline.Value);
+			await ClientPipe.ExecutePipelineAsync(new ClientPipeContextMessage(message, contextItems)
+			{
+				ExchangeName = exchangeName,
+				RoutingKey = routingKey
+			}, _messagePipeline.Value);
 		}
 
 		public async Task<ActiveConsumer> StartListeningQueueAsync<T>(string queueName, ConsumerOptions<T> consumerOptions, Func<T, Dictionary<string, object>, Task> messageProcessor) where T : class

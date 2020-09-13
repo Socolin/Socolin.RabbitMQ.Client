@@ -11,11 +11,12 @@ namespace Socolin.RabbitMQ.Client.Pipes.Client.Context
 		public string ExchangeName { get; set; } = RabbitMqConstants.DefaultExchangeName;
 		public IBasicProperties? BasicProperties { get; set; }
 		public ReadOnlyMemory<byte> SerializedMessage { get; set; }
-		public Dictionary<string, object> Items { get; } = new Dictionary<string, object>();
+		public Dictionary<string, object> Items { get; }
 
-		public ClientPipeContextMessage(object message)
+		public ClientPipeContextMessage(object message, Dictionary<string, object>? items = null)
 		{
 			Message = message;
+			Items = items ?? new Dictionary<string, object>();
 		}
 
 		public ChannelContainer? ChannelContainer { get; set; }

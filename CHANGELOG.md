@@ -2,6 +2,7 @@
 
 - Allow specifying ExchangeName/RoutingKey when publishing a message as an alternative to QueueName.
 - Add new `CreateQueueOptionBuilder` to simplify how to create a queue with custom arguments.
+- Allow specifying `contextItems` when enqueueing a message. This databag is available through the `IPipeContext.Items` in pipes.
 
 1.1
 
