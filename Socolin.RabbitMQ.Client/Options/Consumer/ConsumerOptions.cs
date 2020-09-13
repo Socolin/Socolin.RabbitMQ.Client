@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Socolin.RabbitMQ.Client.ConsumerPipes;
-using Socolin.RabbitMQ.Client.ConsumerPipes.Builders;
+using Socolin.RabbitMQ.Client.Pipes.Consumer;
+using Socolin.RabbitMQ.Client.Pipes.Consumer.Builders;
 
 namespace Socolin.RabbitMQ.Client.Options.Consumer
 {

@@ -1,7 +1,8 @@
 using System;
 using System.Threading.Tasks;
 using Socolin.RabbitMQ.Client.Pipes;
-using Socolin.RabbitMQ.Client.Pipes.Context;
+using Socolin.RabbitMQ.Client.Pipes.Client;
+using Socolin.RabbitMQ.Client.Pipes.Client.Context;
 
 namespace Socolin.RabbitMQ.Client
 {
@@ -12,17 +13,17 @@ namespace Socolin.RabbitMQ.Client
 
 	public class RabbitMqEnqueueQueueClient : IRabbitMqEnqueueQueueClient
 	{
-		private readonly ReadOnlyMemory<IPipe> _pipeline;
+		private readonly ReadOnlyMemory<IClientPipe> _pipeline;
 
-		public RabbitMqEnqueueQueueClient(ReadOnlyMemory<IPipe> pipeline)
+		public RabbitMqEnqueueQueueClient(ReadOnlyMemory<IClientPipe> pipeline)
 		{
 			_pipeline = pipeline;
 		}
 
 		public async Task EnqueueMessageAsync(object message)
 		{
-			var pipeMessage = new PipeContextMessage(message);
-			await Pipe.ExecutePipelineAsync(pipeMessage, _pipeline);
+			var pipeMessage = new ClientPipeContextMessage(message);
+			await ClientPipe.ExecutePipelineAsync(pipeMessage, _pipeline);
 		}
 	}
 }

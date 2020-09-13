@@ -5,8 +5,8 @@ using Moq;
 using NUnit.Framework;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
-using Socolin.RabbitMQ.Client.ConsumerPipes;
-using Socolin.RabbitMQ.Client.ConsumerPipes.Context;
+using Socolin.RabbitMQ.Client.Pipes.Consumer;
+using Socolin.RabbitMQ.Client.Pipes.Consumer.Context;
 
 namespace Socolin.RabbitMQ.Client.Tests.Unit
 {

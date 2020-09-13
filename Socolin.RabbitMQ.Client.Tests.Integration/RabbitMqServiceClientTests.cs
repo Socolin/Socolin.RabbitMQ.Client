@@ -9,6 +9,7 @@ using Newtonsoft.Json;
 using NUnit.Framework;
 using RabbitMQ.Client.Exceptions;
 using Socolin.RabbitMQ.Client.Options;
+using Socolin.RabbitMQ.Client.Options.Client;
 using Socolin.RabbitMQ.Client.Options.Consumer;
 
 namespace Socolin.RabbitMQ.Client.Tests.Integration
