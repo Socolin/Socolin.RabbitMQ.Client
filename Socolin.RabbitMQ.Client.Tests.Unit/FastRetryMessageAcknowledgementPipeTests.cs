@@ -62,7 +62,7 @@ namespace Socolin.RabbitMQ.Client.Tests.Unit
 		public void ProcessAsync_WhenProcessFail_AddHeaderOnMessageAndRepublishIt_AndAcknowledgeCurrentMessage()
 		{
 			var s = new MockSequence();
-			_channelMock.InSequence(s).Setup(m => m.BasicPublish(string.Empty, RoutingKey, true, _basicProperties, Body));
+			_channelMock.InSequence(s).Setup(m => m.BasicPublish(RabbitMqConstants.DefaultExchangeName, RoutingKey, true, _basicProperties, Body));
 			_channelMock.InSequence(s).Setup(m => m.BasicAck(DeliveryTag, false));
 
 			_nextPipeMock.Setup(m => m.ProcessAsync(_consumerPipeContext, It.IsAny<ReadOnlyMemory<IConsumerPipe<string>>>()))
@@ -72,7 +72,7 @@ namespace Socolin.RabbitMQ.Client.Tests.Unit
 
 			Assert.That(_basicProperties.Headers.ContainsKey("RetryCount"), Is.True);
 			Assert.That(_basicProperties.Headers["RetryCount"], Is.EqualTo(1));
-			_channelMock.Verify(m => m.BasicPublish(string.Empty, RoutingKey, true, _basicProperties, Body), Times.Once);
+			_channelMock.Verify(m => m.BasicPublish(RabbitMqConstants.DefaultExchangeName, RoutingKey, true, _basicProperties, Body), Times.Once);
 			_channelMock.Verify(m => m.BasicAck(DeliveryTag, false), Times.Once);
 		}
 
@@ -81,7 +81,7 @@ namespace Socolin.RabbitMQ.Client.Tests.Unit
 		public void ProcessAsync_WhenProcessFail_IncrementRetryCount_AndRepublishMessageAndAckCurrentMessage()
 		{
 			var s = new MockSequence();
-			_channelMock.InSequence(s).Setup(m => m.BasicPublish(string.Empty, RoutingKey, true, _basicProperties, Body));
+			_channelMock.InSequence(s).Setup(m => m.BasicPublish(RabbitMqConstants.DefaultExchangeName, RoutingKey, true, _basicProperties, Body));
 			_channelMock.InSequence(s).Setup(m => m.BasicAck(DeliveryTag, false));
 
 			_basicProperties.Headers = new Dictionary<string, object> {["RetryCount"] = 1};
@@ -91,7 +91,7 @@ namespace Socolin.RabbitMQ.Client.Tests.Unit
 			_pipe.ProcessAsync(_consumerPipeContext, _fakePipeline);
 
 			Assert.That(_basicProperties.Headers["RetryCount"], Is.EqualTo(2));
-			_channelMock.Verify(m => m.BasicPublish(string.Empty, RoutingKey, true, _basicProperties, Body), Times.Once);
+			_channelMock.Verify(m => m.BasicPublish(RabbitMqConstants.DefaultExchangeName, RoutingKey, true, _basicProperties, Body), Times.Once);
 			_channelMock.Verify(m => m.BasicAck(DeliveryTag, false), Times.Once);
 		}
 

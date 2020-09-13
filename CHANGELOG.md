@@ -1,3 +1,7 @@
+1.2
+
+- Allow specifying ExchangeName/RoutingKey when publishing a message as an alternative to QueueName.
+
 1.1
 
 - Create pipelines only when they are needed. So it does not throw because Serializer is missing when creating a client to listen to a queue, for example.

@@ -8,7 +8,6 @@ using FluentAssertions.Execution;
 using Newtonsoft.Json;
 using NUnit.Framework;
 using RabbitMQ.Client.Exceptions;
-using Socolin.RabbitMQ.Client.Options;
 using Socolin.RabbitMQ.Client.Options.Client;
 using Socolin.RabbitMQ.Client.Options.Consumer;
 
@@ -86,7 +85,7 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 		{
 			using var channelContainer = await _rabbitMqConnectionManager.AcquireChannel();
 			channelContainer.Channel.QueueDeclare(_queueName, true, false, false, null);
-			channelContainer.Channel.BasicPublish("", _queueName, true, null, new byte[] {0x42});
+			channelContainer.Channel.BasicPublish(RabbitMqConstants.DefaultExchangeName, _queueName, true, null, new byte[] {0x42});
 
 			await _serviceClient.PurgeQueueAsync(_queueName);
 
@@ -99,7 +98,7 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 		{
 			using var channelContainer = await _rabbitMqConnectionManager.AcquireChannel();
 			channelContainer.Channel.QueueDeclare(_queueName, true, false, false, null);
-			channelContainer.Channel.BasicPublish("", _queueName, true, null, new byte[] {0x42});
+			channelContainer.Channel.BasicPublish(RabbitMqConstants.DefaultExchangeName, _queueName, true, null, new byte[] {0x42});
 
 			await _serviceClient.DeleteQueueAsync(_queueName, false, false);
 
@@ -113,8 +112,8 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 		{
 			using var channelContainer = await _rabbitMqConnectionManager.AcquireChannel();
 			channelContainer.Channel.QueueDeclare(_queueName, true, false, false, null);
-			channelContainer.Channel.BasicPublish("", _queueName, true, null, new byte[] {0x42});
-			channelContainer.Channel.BasicPublish("", _queueName, true, null, new byte[] {0x42});
+			channelContainer.Channel.BasicPublish(RabbitMqConstants.DefaultExchangeName, _queueName, true, null, new byte[] {0x42});
+			channelContainer.Channel.BasicPublish(RabbitMqConstants.DefaultExchangeName, _queueName, true, null, new byte[] {0x42});
 
 			var count = await _serviceClient.GetMessageCountInQueueAsync(_queueName);
 

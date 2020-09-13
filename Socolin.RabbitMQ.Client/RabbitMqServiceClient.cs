@@ -4,10 +4,8 @@ using System.Threading.Tasks;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using RabbitMQ.Client.Exceptions;
-using Socolin.RabbitMQ.Client.Options;
 using Socolin.RabbitMQ.Client.Options.Client;
 using Socolin.RabbitMQ.Client.Options.Consumer;
-using Socolin.RabbitMQ.Client.Pipes;
 using Socolin.RabbitMQ.Client.Pipes.Client;
 using Socolin.RabbitMQ.Client.Pipes.Client.Context;
 using Socolin.RabbitMQ.Client.Pipes.Consumer;
@@ -21,8 +19,10 @@ namespace Socolin.RabbitMQ.Client
 		Task PurgeQueueAsync(string queueName);
 		Task DeleteQueueAsync(string queueName, bool ifUnused, bool ifEmpty);
 		Task EnqueueMessageAsync(string queueName, object message);
+		Task EnqueueMessageToExchangeAsync(string exchangeName, string routingKey, object message);
 		Task<ActiveConsumer> StartListeningQueueAsync<T>(string queueName, ConsumerOptions<T> consumerOptions, Func<T, Dictionary<string, object>, Task> messageProcessor) where T : class;
 		RabbitMqEnqueueQueueClient CreateQueueClient(string queueName);
+		RabbitMqEnqueueQueueClient CreateQueueClient(string exchangeName, string routingKey);
 	}
 
 	public class RabbitMqServiceClient : IRabbitMqServiceClient
@@ -88,7 +88,12 @@ namespace Socolin.RabbitMQ.Client
 
 		public async Task EnqueueMessageAsync(string queueName, object message)
 		{
-			await ClientPipe.ExecutePipelineAsync(new ClientPipeContextMessage(message) {QueueName = queueName}, _messagePipeline.Value);
+			await ClientPipe.ExecutePipelineAsync(new ClientPipeContextMessage(message) {ExchangeName = RabbitMqConstants.DefaultExchangeName, RoutingKey = queueName}, _messagePipeline.Value);
+		}
+
+		public async Task EnqueueMessageToExchangeAsync(string exchangeName, string routingKey, object message)
+		{
+			await ClientPipe.ExecutePipelineAsync(new ClientPipeContextMessage(message) {ExchangeName = exchangeName, RoutingKey = routingKey}, _messagePipeline.Value);
 		}
 
 		public async Task<ActiveConsumer> StartListeningQueueAsync<T>(string queueName, ConsumerOptions<T> consumerOptions, Func<T, Dictionary<string, object>, Task> messageProcessor) where T : class
@@ -117,6 +122,13 @@ namespace Socolin.RabbitMQ.Client
 			};
 
 			return channel.BasicConsume(queueName, false, consumer);
+		}
+
+		public RabbitMqEnqueueQueueClient CreateQueueClient(string exchangeName, string routingKey)
+		{
+			var queueClientPipe = new List<IClientPipe>(_messagePipeline.Value.Span.ToArray());
+			queueClientPipe.Insert(0, new QueueSelectionClientPipe(exchangeName, routingKey));
+			return new RabbitMqEnqueueQueueClient(new ReadOnlyMemory<IClientPipe>(queueClientPipe.ToArray()));
 		}
 
 		public RabbitMqEnqueueQueueClient CreateQueueClient(string queueName)

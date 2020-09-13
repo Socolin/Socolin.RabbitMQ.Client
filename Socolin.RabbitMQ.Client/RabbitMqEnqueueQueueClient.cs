@@ -1,6 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using Socolin.RabbitMQ.Client.Pipes;
 using Socolin.RabbitMQ.Client.Pipes.Client;
 using Socolin.RabbitMQ.Client.Pipes.Client.Context;
 

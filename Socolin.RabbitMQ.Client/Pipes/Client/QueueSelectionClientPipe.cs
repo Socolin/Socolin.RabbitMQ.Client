@@ -6,16 +6,25 @@ namespace Socolin.RabbitMQ.Client.Pipes.Client
 {
 	public class QueueSelectionClientPipe : ClientPipe, IMessageClientPipe
 	{
-		private readonly string _queueName;
+		private readonly string _exchangeName;
+		private readonly string _routingKey;
 
-		public QueueSelectionClientPipe(string queueName)
+		public QueueSelectionClientPipe(string routingKey)
 		{
-			_queueName = queueName;
+			_exchangeName = RabbitMqConstants.DefaultExchangeName;
+			_routingKey = routingKey;
+		}
+
+		public QueueSelectionClientPipe(string exchangeName, string routingKey)
+		{
+			_exchangeName = exchangeName;
+			_routingKey = routingKey;
 		}
 
 		public Task ProcessAsync(ClientPipeContextMessage clientPipeContextMessage, ReadOnlyMemory<IClientPipe> pipeline)
 		{
-			clientPipeContextMessage.QueueName = _queueName;
+			clientPipeContextMessage.ExchangeName = _exchangeName;
+			clientPipeContextMessage.RoutingKey = _routingKey;
 			return ProcessNextAsync(clientPipeContextMessage, pipeline);
 		}
 	}
