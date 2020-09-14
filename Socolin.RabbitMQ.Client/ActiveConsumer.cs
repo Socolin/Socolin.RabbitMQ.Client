@@ -1,6 +1,11 @@
 namespace Socolin.RabbitMQ.Client
 {
-	public class ActiveConsumer
+	public interface IActiveConsumer
+	{
+		void Cancel();
+	}
+
+	public class ActiveConsumer : IActiveConsumer
 	{
 		public string ConsumerTag { get; }
 		private readonly ChannelContainer _channelContainer;
