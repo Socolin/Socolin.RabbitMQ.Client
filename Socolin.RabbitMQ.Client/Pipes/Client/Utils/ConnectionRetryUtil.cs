@@ -18,6 +18,8 @@ namespace Socolin.RabbitMQ.Client.Pipes.Client.Utils
 		public ConnectionRetryUtil(RetryClientPipeBuilder retryClientPipeBuilder)
 		{
 			_retryClientPipeBuilder = retryClientPipeBuilder;
+			if (_retryClientPipeBuilder.DelayBetweenRetry == null)
+				throw new ArgumentNullException(nameof(retryClientPipeBuilder), "DelayBetweenRetry is required");
 		}
 
 		public async Task ExecuteWithRetryOnErrorsAsync(Func<Task> work)
@@ -28,7 +30,7 @@ namespace Socolin.RabbitMQ.Client.Pipes.Client.Utils
 			while (true)
 			{
 				if (retryCount > 0)
-					await Task.Delay(_retryClientPipeBuilder.DelayBetweenRetry);
+					await Task.Delay(_retryClientPipeBuilder.DelayBetweenRetry!.Value);
 
 				retryCount++;
 				try
@@ -57,7 +59,7 @@ namespace Socolin.RabbitMQ.Client.Pipes.Client.Utils
 			if (_retryClientPipeBuilder.MaxRetryCount.HasValue && retryCount <= _retryClientPipeBuilder.MaxRetryCount)
 				return true;
 			if (_retryClientPipeBuilder.MaxRetryDuration.HasValue)
-				if (sw.ElapsedMilliseconds + _retryClientPipeBuilder.DelayBetweenRetry.TotalMilliseconds < _retryClientPipeBuilder.MaxRetryDuration.Value.TotalMilliseconds)
+				if (sw.ElapsedMilliseconds + _retryClientPipeBuilder.DelayBetweenRetry!.Value.TotalMilliseconds < _retryClientPipeBuilder.MaxRetryDuration.Value.TotalMilliseconds)
 					return true;
 			return false;
 		}

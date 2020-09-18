@@ -1,3 +1,7 @@
+1.3
+
+- Allow specifying an array of TimeSpan for client retry logic.
+
 1.2
 
 - Allow specifying ExchangeName/RoutingKey when publishing a message as an alternative to QueueName.

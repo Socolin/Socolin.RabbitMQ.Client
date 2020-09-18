@@ -20,6 +20,7 @@ namespace Socolin.RabbitMQ.Client.Options.Client
 		private readonly IList<IClientPipeBuilder> _customPipeBuilders = new List<IClientPipeBuilder>();
 		private bool _usePerMessageTtl;
 		private int? _perMessageTTl;
+		private TimeSpan[]? _delaysBetweenRetry;
 
 		public RabbitMqServiceOptionsBuilder WithConnectionManager(IRabbitMqConnectionManager connectionManager)
 		{
@@ -32,6 +33,14 @@ namespace Socolin.RabbitMQ.Client.Options.Client
 			if (_delayBetweenRetry != null)
 				throw new InvalidBuilderOptionsException("You need to choose either to use built-in retry logic or a custom pipe, but not both");
 			_retryPipeBuilder = retryClientPipeBuilder;
+			return this;
+		}
+
+		public RabbitMqServiceOptionsBuilder WithRetry(TimeSpan[] delaysBetweenRetry)
+		{
+			if (_retryPipeBuilder != null)
+				throw new InvalidBuilderOptionsException("You need to choose either to use built-in retry logic or a custom pipe, but not both");
+			_delaysBetweenRetry = delaysBetweenRetry;
 			return this;
 		}
 
@@ -101,6 +110,8 @@ namespace Socolin.RabbitMQ.Client.Options.Client
 				options.Retry = _retryPipeBuilder;
 			else if (_delayBetweenRetry != null)
 				options.Retry = new RetryClientPipeBuilder(_maxRetryDuration, _maxRetryCount, _delayBetweenRetry.Value);
+			else if (_delaysBetweenRetry != null)
+				options.Retry = new RetryClientPipeBuilder(_delaysBetweenRetry);
 
 			if (_usePerMessageTtl)
 				options.PerMessageTtl = new PerMessageTtlOption(_perMessageTTl);
