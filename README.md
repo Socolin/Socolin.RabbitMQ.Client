@@ -151,6 +151,17 @@ You can also provide multiple deserializer to use the appropriate one depending 
 
 You can push whatever logic you want here.
 
+Using the builder, you can either provide an implementation of `IConsumerPipeBuilder<T>` or you can write a function inline:
+
+```
+.WithCustomPipe(async (context, next) =>
+{
+    Console.WriteLine("Some logging message before processing");
+    await next();
+    Console.WriteLine("Some logging message after processing");
+})
+```
+
 #### Processor Pipe
 
 This one is going to call the function given to the method `StartListeningQueueAsync()`.

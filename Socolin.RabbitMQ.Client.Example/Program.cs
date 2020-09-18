@@ -35,6 +35,12 @@ namespace Socolin.RabbitMQ.Client.Example
 			var consumerOptions = new ConsumerOptionsBuilder<string>()
 				.WithDefaultDeSerializer(message => JsonConvert.DeserializeObject<string>(Encoding.UTF8.GetString(message.Span)))
 				.WithSimpleMessageAck()
+				.WithCustomPipe(async (context, next) =>
+				{
+					Console.WriteLine("Some logging message before processing");
+					await next();
+					Console.WriteLine("Some logging message after processing");
+				})
 				.Build();
 			var activeConsumer = await serviceClient.StartListeningQueueAsync(queueName, consumerOptions, (message, items) =>
 			{

@@ -1,3 +1,7 @@
+1.3.1
+
+- Add a new overload `WithCustomPipe` on `ConsumerOptionsBuilder` to be able to define pipeline inline. (Like `.Use()` for ASP.NET Core middlewares)
+
 1.3
 
 - Allow specifying an array of TimeSpan for client retry logic.
