@@ -55,7 +55,7 @@ namespace Socolin.RabbitMQ.Client.Pipes.Consumer
 			}
 		}
 
-		public static async Task<string> CreateDelayQueueAsync(RabbitMqServiceClient serviceClient, string baseQueueName)
+		public static async Task<string> CreateDelayQueueAsync(IRabbitMqServiceClient serviceClient, string baseQueueName)
 		{
 			string delayedQueueName = DelayedQueueName(baseQueueName);
 
