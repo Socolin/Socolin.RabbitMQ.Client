@@ -21,7 +21,7 @@ namespace Socolin.RabbitMQ.Client
 		Task DeleteQueueAsync(string queueName, bool ifUnused, bool ifEmpty);
 		Task EnqueueMessageAsync(string queueName, object message, Dictionary<string, object>? contextItems = null);
 		Task EnqueueMessageToExchangeAsync(string exchangeName, string routingKey, object message, Dictionary<string, object>? contextItems = null);
-		Task<IActiveConsumer> StartListeningQueueAsync<T>(string queueName, ConsumerOptions<T> consumerOptions, Func<T, Dictionary<string, object>, Task> messageProcessor) where T : class;
+		Task<IActiveConsumer> StartListeningQueueAsync<T>(string queueName, ConsumerOptions<T> consumerOptions, ProcessorMessageDelegate<T> messageProcessor) where T : class;
 		RabbitMqEnqueueQueueClient CreateQueueClient(string queueName);
 		RabbitMqEnqueueQueueClient CreateQueueClient(string exchangeName, string routingKey);
 	}
@@ -110,7 +110,7 @@ namespace Socolin.RabbitMQ.Client
 			}, _messagePipeline.Value);
 		}
 
-		public async Task<IActiveConsumer> StartListeningQueueAsync<T>(string queueName, ConsumerOptions<T> consumerOptions, Func<T, Dictionary<string, object>, Task> messageProcessor) where T : class
+		public async Task<IActiveConsumer> StartListeningQueueAsync<T>(string queueName, ConsumerOptions<T> consumerOptions, ProcessorMessageDelegate<T> messageProcessor) where T : class
 		{
 			var consumerPipeline = consumerOptions.BuildPipeline();
 
@@ -126,7 +126,7 @@ namespace Socolin.RabbitMQ.Client
 			return new ActiveConsumer(pipeContext.GetItemValue<string>(consumerTagKey), pipeContext.ChannelContainer!);
 		}
 
-		private string BeginConsumeQueue<T>(IModel channel, string queueName, ReadOnlyMemory<IConsumerPipe<T>> consumerPipeline, Func<T, Dictionary<string, object>, Task> messageProcessor) where T : class
+		private string BeginConsumeQueue<T>(IModel channel, string queueName, ReadOnlyMemory<IConsumerPipe<T>> consumerPipeline, ProcessorMessageDelegate<T> messageProcessor) where T : class
 		{
 			var consumer = new AsyncEventingBasicConsumer(channel);
 			consumer.Received += async (_, message) =>

@@ -6,6 +6,8 @@ using RabbitMQ.Client.Events;
 
 namespace Socolin.RabbitMQ.Client.Pipes.Consumer.Context
 {
+	public delegate Task ProcessorMessageDelegate<in T>(T message, Dictionary<string, object> items) where T : class;
+
 	public interface IConsumerPipeContext<T> where T : class
 	{
 		IModel Chanel { get; }
@@ -15,7 +17,7 @@ namespace Socolin.RabbitMQ.Client.Pipes.Consumer.Context
 		/// <summary>
 		/// A function called at the end of the pipe to process the deserialized message
 		/// </summary>
-		Func<T, Dictionary<string, object>, Task> MessageProcessor { get; }
+		ProcessorMessageDelegate<T> MessageProcessor { get; }
 
 		/// <summary>
 		/// A bag to store data that need to be between multiple pipe or accessed at the end
