@@ -1,16 +1,15 @@
-using System;
 using System.Collections.Generic;
 
 namespace Socolin.RabbitMQ.Client.Options.Consumer
 {
 	public class DeserializationPipeOptions<T> where T : class
 	{
-		public readonly Func<ReadOnlyMemory<byte>, T> DefaultDeserializer;
-		public readonly IReadOnlyDictionary<string, Func<ReadOnlyMemory<byte>, T>> Deserializers;
+		public readonly SerializerDelegate<T> DefaultDeserializer;
+		public readonly IReadOnlyDictionary<string, SerializerDelegate<T>> Deserializers;
 
 		public DeserializationPipeOptions(
-			Func<ReadOnlyMemory<byte>, T> defaultDeserializer,
-			IReadOnlyDictionary<string, Func<ReadOnlyMemory<byte>, T>> deserializers
+			SerializerDelegate<T> defaultDeserializer,
+			IReadOnlyDictionary<string, SerializerDelegate<T>> deserializers
 		)
 		{
 			DefaultDeserializer = defaultDeserializer;

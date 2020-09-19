@@ -20,7 +20,9 @@ namespace Socolin.RabbitMQ.Client
 		Task PurgeQueueAsync(string queueName);
 		Task DeleteQueueAsync(string queueName, bool ifUnused, bool ifEmpty);
 		Task EnqueueMessageAsync(string queueName, object message, Dictionary<string, object>? contextItems = null);
+		Task EnqueueMessageAsync(string queueName, object message, string contentType);
 		Task EnqueueMessageToExchangeAsync(string exchangeName, string routingKey, object message, Dictionary<string, object>? contextItems = null);
+		Task EnqueueMessageToExchangeAsync(string exchangeName, string routingKey, object message, string contentType);
 		Task<IActiveConsumer> StartListeningQueueAsync<T>(string queueName, ConsumerOptions<T> consumerOptions, ProcessorMessageDelegate<T> messageProcessor) where T : class;
 		RabbitMqEnqueueQueueClient CreateQueueClient(string queueName);
 		RabbitMqEnqueueQueueClient CreateQueueClient(string exchangeName, string routingKey);
@@ -92,6 +94,14 @@ namespace Socolin.RabbitMQ.Client
 			}), _actionPipeline.Value);
 		}
 
+		public Task EnqueueMessageAsync(string queueName, object message, string contentType)
+		{
+			return EnqueueMessageAsync(queueName, message, new Dictionary<string, object>
+			{
+				[SerializerClientPipe.ContentTypeKeyName] = contentType
+			});
+		}
+
 		public async Task EnqueueMessageAsync(string queueName, object message, Dictionary<string, object>? contextItems = null)
 		{
 			await ClientPipe.ExecutePipelineAsync(new ClientPipeContextMessage(message, contextItems)
@@ -99,6 +109,14 @@ namespace Socolin.RabbitMQ.Client
 				ExchangeName = RabbitMqConstants.DefaultExchangeName,
 				RoutingKey = queueName
 			}, _messagePipeline.Value);
+		}
+
+		public Task EnqueueMessageToExchangeAsync(string exchangeName, string routingKey, object message, string contentType)
+		{
+			return EnqueueMessageToExchangeAsync(exchangeName, routingKey, message, new Dictionary<string, object>
+			{
+				[SerializerClientPipe.ContentTypeKeyName] = contentType
+			});
 		}
 
 		public async Task EnqueueMessageToExchangeAsync(string exchangeName, string routingKey, object message, Dictionary<string, object>? contextItems = null)

@@ -16,7 +16,7 @@ namespace Socolin.RabbitMQ.Client.Example
 			var options = new RabbitMqServiceOptionsBuilder()
 				.WithRetry(TimeSpan.FromSeconds(15), null, TimeSpan.FromSeconds(1))
 				.WithConnectionManager(rabbitMqConnectionManager)
-				.WithSerializer(message => Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(message)), "application/json")
+				.WithDefaultSerializer(message => Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(message)), "application/json")
 				.Build();
 			var serviceClient = new RabbitMqServiceClient(options);
 

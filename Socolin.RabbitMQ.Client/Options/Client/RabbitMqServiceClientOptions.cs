@@ -10,7 +10,7 @@ namespace Socolin.RabbitMQ.Client.Options.Client
 	public class RabbitMqServiceClientOptions
 	{
 		public IRabbitMqConnectionManager RabbitMqConnectionManager { get; set; }
-		public SerializationOption? Serialization { get; set; }
+		public SerializationOptions? Serialization { get; set; }
 		public IGenericClientPipeBuilder? Retry { get; set; }
 		public List<IClientPipeBuilder> CustomPipes { get; set; } = new List<IClientPipeBuilder>();
 		public PerMessageTtlOption? PerMessageTtl { get; set; }
@@ -31,7 +31,7 @@ namespace Socolin.RabbitMQ.Client.Options.Client
 			if (Retry != null)
 				pipes.Add(Retry.BuildPipe());
 			pipes.Add(new ConnectionClientPipe(RabbitMqConnectionManager));
-			pipes.Add(new SerializerClientPipe(Serialization.Serializer, Serialization.ContentType));
+			pipes.Add(new SerializerClientPipe(Serialization));
 			if (PerMessageTtl != null)
 				pipes.Add(new MessageTtlClientPipe(PerMessageTtl.PerMessageTTl));
 			pipes.AddRange(CustomPipes

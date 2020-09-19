@@ -29,7 +29,7 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 			var options = new RabbitMqServiceOptionsBuilder()
 				.WithRetry(TimeSpan.FromSeconds(15), null, TimeSpan.FromSeconds(1))
 				.WithConnectionManager(_rabbitMqConnectionManager)
-				.WithSerializer(message => Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(message)), "application/json")
+				.WithDefaultSerializer(message => Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(message)), "application/json")
 				.Build();
 			_serviceClient = new RabbitMqServiceClient(options);
 			_queueName = BaseQueueName + Guid.NewGuid();

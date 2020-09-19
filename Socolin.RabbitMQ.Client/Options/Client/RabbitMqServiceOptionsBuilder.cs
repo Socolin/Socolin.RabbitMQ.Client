@@ -14,8 +14,10 @@ namespace Socolin.RabbitMQ.Client.Options.Client
 		private TimeSpan? _delayBetweenRetry;
 		private IGenericClientPipeBuilder? _retryPipeBuilder;
 
-		private Func<object, byte[]>? _serializer;
+		private SerializerDelegate? _serializer;
 		private string? _contentType;
+
+		private readonly Dictionary<string, SerializerDelegate> _serializers = new Dictionary<string, SerializerDelegate>();
 
 		private readonly IList<IClientPipeBuilder> _customPipeBuilders = new List<IClientPipeBuilder>();
 		private bool _usePerMessageTtl;
@@ -54,10 +56,19 @@ namespace Socolin.RabbitMQ.Client.Options.Client
 			return this;
 		}
 
-		public RabbitMqServiceOptionsBuilder WithSerializer(Func<object, byte[]> serializer, string? contentType)
+		public RabbitMqServiceOptionsBuilder WithDefaultSerializer(SerializerDelegate serializer, string? contentType)
 		{
 			_serializer = serializer;
 			_contentType = contentType;
+
+			return this;
+		}
+
+		public RabbitMqServiceOptionsBuilder WithSerializer(SerializerDelegate serializer, string? contentType)
+		{
+			if (contentType != null)
+				_serializers[contentType] = serializer;
+
 			return this;
 		}
 
@@ -103,8 +114,8 @@ namespace Socolin.RabbitMQ.Client.Options.Client
 				_connectionManager
 			);
 
-			if (_serializer != null)
-				options.Serialization = new SerializationOption(_serializer, _contentType);
+			if (_serializer != null || _serializers.Count > 0)
+				options.Serialization = new SerializationOptions(_serializer, _contentType, _serializers);
 
 			if (_retryPipeBuilder != null)
 				options.Retry = _retryPipeBuilder;

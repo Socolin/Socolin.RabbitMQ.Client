@@ -9,6 +9,7 @@ namespace Socolin.RabbitMQ.Client
 	public interface IRabbitMqEnqueueQueueClient
 	{
 		Task EnqueueMessageAsync(object message, Dictionary<string, object>? contextItems = null);
+		Task EnqueueMessageAsync(object message, string contentType);
 	}
 
 	public class RabbitMqEnqueueQueueClient : IRabbitMqEnqueueQueueClient
@@ -24,6 +25,14 @@ namespace Socolin.RabbitMQ.Client
 		{
 			var pipeMessage = new ClientPipeContextMessage(message, contextItems);
 			await ClientPipe.ExecutePipelineAsync(pipeMessage, _pipeline);
+		}
+
+		public Task EnqueueMessageAsync(object message, string contentType)
+		{
+			return EnqueueMessageAsync(message, new Dictionary<string, object>
+			{
+				[SerializerClientPipe.ContentTypeKeyName] = contentType
+			});
 		}
 	}
 }

@@ -9,14 +9,16 @@ using Socolin.RabbitMQ.Client.Pipes.Consumer.Context;
 
 namespace Socolin.RabbitMQ.Client.Options.Consumer
 {
+	public delegate T SerializerDelegate<out T>(ReadOnlyMemory<byte> bytes) where T : class;
+
 	public class ConsumerOptionsBuilder<T> where T : class
 	{
-		private readonly IDictionary<string, Func<ReadOnlyMemory<byte>, T>> _deserializers = new Dictionary<string, Func<ReadOnlyMemory<byte>, T>>();
-		private Func<ReadOnlyMemory<byte>, T>? _defaultDeserializer;
+		private readonly IDictionary<string, SerializerDelegate<T>> _deserializers = new Dictionary<string, SerializerDelegate<T>>();
+		private SerializerDelegate<T>? _defaultDeserializer;
 		private readonly List<IConsumerPipeBuilder<T>> _customPipes = new List<IConsumerPipeBuilder<T>>();
 		private IConsumerPipeBuilder<T>? _messageAcknowledgmentPipeBuilder;
 
-		public ConsumerOptionsBuilder<T> WithDefaultDeSerializer(Func<ReadOnlyMemory<byte>, T> deserializer)
+		public ConsumerOptionsBuilder<T> WithDefaultDeSerializer(SerializerDelegate<T> deserializer)
 		{
 			_defaultDeserializer = deserializer;
 			return this;
@@ -29,7 +31,7 @@ namespace Socolin.RabbitMQ.Client.Options.Consumer
 		/// <param name="deserializer"></param>
 		/// <param name="contentType"></param>
 		/// <returns></returns>
-		public ConsumerOptionsBuilder<T> WithDeSerializer(Func<ReadOnlyMemory<byte>, T> deserializer, string contentType)
+		public ConsumerOptionsBuilder<T> WithDeSerializer(SerializerDelegate<T> deserializer, string contentType)
 		{
 			_deserializers[contentType] = deserializer;
 			return this;
@@ -112,7 +114,7 @@ namespace Socolin.RabbitMQ.Client.Options.Consumer
 			if (_defaultDeserializer == null)
 				throw new InvalidRabbitMqOptionException("Please provide a deserializer in options before listening to a queue");
 
-			var options = new ConsumerOptions<T>(new DeserializationPipeOptions<T>(_defaultDeserializer, new ReadOnlyDictionary<string, Func<ReadOnlyMemory<byte>, T>>(_deserializers)))
+			var options = new ConsumerOptions<T>(new DeserializationPipeOptions<T>(_defaultDeserializer, new ReadOnlyDictionary<string, SerializerDelegate<T>>(_deserializers)))
 			{
 				MessageAcknowledgmentPipeBuilder = _messageAcknowledgmentPipeBuilder
 			};

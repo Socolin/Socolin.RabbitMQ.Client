@@ -1,3 +1,12 @@
+1.4
+
+- Declare delegates for serializer/deserializer functions
+- Rework Serialization logic to allow specify which serializer to use when enqueueing a message
+
+1.3.2
+
+- Declare delegate to improve readability and usage of `messageProcessor` in  `StartListeningQueueAsync`
+
 1.3.1
 
 - Add a new overload `WithCustomPipe` on `ConsumerOptionsBuilder` to be able to define pipeline inline. (Like `.Use()` for ASP.NET Core middlewares)
