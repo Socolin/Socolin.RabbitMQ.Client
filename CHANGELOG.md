@@ -1,3 +1,7 @@
+1.5.1
+
+- default deserializer is now optional if another deserializer has been specified
+
 1.5
 
 - Add a new pipe to log processing exception in consumer pipe: `LogExceptionConsumerPipe`

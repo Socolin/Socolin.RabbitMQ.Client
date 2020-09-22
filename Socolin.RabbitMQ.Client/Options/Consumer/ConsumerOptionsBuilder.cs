@@ -118,7 +118,7 @@ namespace Socolin.RabbitMQ.Client.Options.Consumer
 
 		public ConsumerOptions<T> Build()
 		{
-			if (_defaultDeserializer == null)
+			if (_defaultDeserializer == null && _deserializers.Count == 0)
 				throw new InvalidRabbitMqOptionException("Please provide a deserializer in options before listening to a queue");
 
 			var options = new ConsumerOptions<T>(new DeserializationPipeOptions<T>(_defaultDeserializer, new ReadOnlyDictionary<string, SerializerDelegate<T>>(_deserializers)))

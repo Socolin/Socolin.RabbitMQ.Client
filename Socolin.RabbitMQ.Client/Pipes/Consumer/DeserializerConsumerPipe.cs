@@ -20,8 +20,10 @@ namespace Socolin.RabbitMQ.Client.Pipes.Consumer
 
 			if (_options.Deserializers.ContainsKey(message.BasicProperties.ContentType))
 				context.DeserializedMessage = _options.Deserializers[message.BasicProperties.ContentType](message.Body);
-			else
+			else if (_options.DefaultDeserializer != null)
 				context.DeserializedMessage = _options.DefaultDeserializer(message.Body);
+			else
+				throw new NotSupportedException($"No deserializer for {message.BasicProperties.ContentType} nor default serializer was provided");
 
 			return ProcessNextAsync(context, pipeline);
 		}
