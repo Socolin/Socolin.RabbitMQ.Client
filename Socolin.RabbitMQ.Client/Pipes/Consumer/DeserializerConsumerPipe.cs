@@ -18,7 +18,7 @@ namespace Socolin.RabbitMQ.Client.Pipes.Consumer
 		{
 			var message = context.RabbitMqMessage;
 
-			if (_options.Deserializers.ContainsKey(message.BasicProperties.ContentType))
+			if (message.BasicProperties.ContentType != null && _options.Deserializers.ContainsKey(message.BasicProperties.ContentType))
 				context.DeserializedMessage = _options.Deserializers[message.BasicProperties.ContentType](message.Body);
 			else if (_options.DefaultDeserializer != null)
 				context.DeserializedMessage = _options.DefaultDeserializer(message.Body);
