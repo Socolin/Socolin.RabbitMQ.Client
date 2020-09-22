@@ -11,6 +11,7 @@ namespace Socolin.RabbitMQ.Client.Options.Consumer
 		public DeserializationPipeOptions<T> Deserialization { get; set; }
 		public List<IConsumerPipeBuilder<T>> Customs { get; set; } = new List<IConsumerPipeBuilder<T>>();
 		public IConsumerPipeBuilder<T>? MessageAcknowledgmentPipeBuilder { get; set; }
+		public LogExceptionConsumerPipe<T>.LogExceptionDelegate? LogDelegate { get; set; }
 
 		public ConsumerOptions(DeserializationPipeOptions<T> deserialization)
 		{
@@ -26,6 +27,9 @@ namespace Socolin.RabbitMQ.Client.Options.Consumer
 
 			if (MessageAcknowledgmentPipeBuilder != null)
 				pipeline.Add(MessageAcknowledgmentPipeBuilder.Build());
+			if (LogDelegate != null)
+				pipeline.Add(new LogExceptionConsumerPipe<T>(LogDelegate));
+
 			pipeline.AddRange(Customs.Select(builder => builder.Build()));
 			pipeline.Add(new MessageProcessorPipe<T>());
 

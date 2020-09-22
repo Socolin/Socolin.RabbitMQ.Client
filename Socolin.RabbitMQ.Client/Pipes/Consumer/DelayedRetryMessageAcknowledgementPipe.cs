@@ -10,6 +10,8 @@ namespace Socolin.RabbitMQ.Client.Pipes.Consumer
 	public class DelayedRetryMessageAcknowledgementPipe<T> : ConsumerPipe<T> where T : class
 	{
 		private const string DefaultDelayedRetryCountHeader = "DelayedRetryCount";
+		private const string FinalAttemptItemsKey = "FinalAttempt";
+
 		private readonly TimeSpan[] _retryDelays;
 		private readonly string? _delayedMessagesQueueName;
 		private readonly string _retryCountHeaderName;
@@ -26,6 +28,9 @@ namespace Socolin.RabbitMQ.Client.Pipes.Consumer
 		public override async Task ProcessAsync(IConsumerPipeContext<T> context, ReadOnlyMemory<IConsumerPipe<T>> pipeline)
 		{
 			var rMessage = context.RabbitMqMessage;
+
+			AddFinalAttemptHeader(context);
+
 			try
 			{
 				await ProcessNextAsync(context, pipeline);
@@ -68,6 +73,16 @@ namespace Socolin.RabbitMQ.Client.Pipes.Consumer
 			await serviceClient.CreateQueueAsync(delayedQueueName, options);
 
 			return delayedQueueName;
+		}
+
+		private void AddFinalAttemptHeader(IConsumerPipeContext<T> context)
+		{
+			var rMessage = context.RabbitMqMessage;
+			if (rMessage.BasicProperties.Headers?.ContainsKey(_retryCountHeaderName) != true)
+				return;
+			if (rMessage.BasicProperties.Headers?[_retryCountHeaderName] is int retryCount && retryCount < _retryDelays.Length)
+				return;
+			context.Items[FinalAttemptItemsKey] = true;
 		}
 
 		private static string DelayedQueueName(string baseQueueName)

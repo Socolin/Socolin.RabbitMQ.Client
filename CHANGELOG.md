@@ -1,3 +1,7 @@
+1.5
+
+- Add a new pipe to log processing exception in consumer pipe: `LogExceptionConsumerPipe`
+
 1.4
 
 - Declare delegates for serializer/deserializer functions

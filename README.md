@@ -133,13 +133,24 @@ This pipe will execute the function `PipeContextAction.Action`
 
 ![Consumer Pipeline](./doc/images/consumer-pipeline.png)
 
-#### Message Ack
+#### Message Ack Pipe
 
 This pipe is responsible to acknowledge successfully processed messages, and handle failure (reject or retry logic).
 
 - `SimpleMessageAcknowledgementPipe` This pipe is going to Ack messages when processing worked and Reject when an exception is throw.
 - `FastRetryMessageAcknowledgementPipe` This pipe is going to Ack messages when processing worked. When an exception occurs it will requeue the message with a header `RetryCount`. If the processing failed, and the message already have a header `RetryCount` with a value equal to the maximum retry count, then the message will be rejected. Rejecting the message will delete it, except if you have configured a dead letter queue on the queue. See [Dead Letter Exchanges](https://www.rabbitmq.com/dlx.html) for more details.
 - `DelayedRetryMessageAcknowledgementPipe` This pipe is working like `FastRetryMessageAcknowledgementPipe` but instead of immediately retry failed messages it delays them. To achieve this, the pipe enqueue failed message with a Per-Message TTL (an expiration) in another queue. This queue *must* have the first queue configured as dead letter queue (you can use the helper `DelayedRetryMessageAcknowledgementPipe.CreateDelayQueueAsync` for that), so when messages expire they are enqueue by RabbitMQ server into the first queue.
+
+All those pipes set the `Context.Items`  key `FinalAttempt` to `true` on the last attempt. This is used by the `ExceptionConsumerPipe` to know if it's the final attempt. Useful if you want to log exceptions as warning when the message will be retried and as error when it's the last attempt for a message and that it will be rejected.
+
+##### DelayedRetryMessageAcknowledgementPipe logic
+
+![DelayedRetryMessageAcknowledgementPipe logic](./doc/images/DelayedRetryMessageAcknowledgementPipe.png)
+
+#### LogException Pipe
+
+This pipe can be used to log exception thrown during processing.
+ When an exception is throw from the processor (or from any CustomPipe) it will call `LogExceptionDelegate` with the exception, and a boolean that indicate when it's the last attempt to process this message. See _Message Ack Pipe_
 
 #### Deserialize Pipe
 

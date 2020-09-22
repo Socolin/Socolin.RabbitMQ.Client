@@ -7,9 +7,11 @@ namespace Socolin.RabbitMQ.Client.Pipes.Consumer
 {
 	public class FastRetryMessageAcknowledgementPipe<T> : ConsumerPipe<T> where T : class
 	{
+		private const string DefaultRetryCountHeader = "RetryCount";
+		private const string FinalAttemptItemsKey = "FinalAttempt";
+
 		private readonly int _maximumRetryCount;
 		private readonly string _retryCountHeaderName;
-		private const string DefaultRetryCountHeader = "RetryCount";
 
 		public FastRetryMessageAcknowledgementPipe(int maximumRetryCount, string? retryCountHeaderName = null)
 		{
@@ -20,6 +22,9 @@ namespace Socolin.RabbitMQ.Client.Pipes.Consumer
 		public override async Task ProcessAsync(IConsumerPipeContext<T> context, ReadOnlyMemory<IConsumerPipe<T>> pipeline)
 		{
 			var rMessage = context.RabbitMqMessage;
+
+			AddFinalAttemptHeader(context);
+
 			try
 			{
 				await ProcessNextAsync(context, pipeline);
@@ -45,6 +50,16 @@ namespace Socolin.RabbitMQ.Client.Pipes.Consumer
 					context.Chanel.BasicReject(rMessage.DeliveryTag, false);
 				}
 			}
+		}
+
+		private void AddFinalAttemptHeader(IConsumerPipeContext<T> context)
+		{
+			var rMessage = context.RabbitMqMessage;
+			if (rMessage.BasicProperties.Headers?.ContainsKey(_retryCountHeaderName) != true)
+				return;
+			if (rMessage.BasicProperties.Headers?[_retryCountHeaderName] is int retryCount && retryCount < _maximumRetryCount)
+				return;
+			context.Items[FinalAttemptItemsKey] = true;
 		}
 	}
 }

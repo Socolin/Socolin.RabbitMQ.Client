@@ -17,6 +17,7 @@ namespace Socolin.RabbitMQ.Client.Options.Consumer
 		private SerializerDelegate<T>? _defaultDeserializer;
 		private readonly List<IConsumerPipeBuilder<T>> _customPipes = new List<IConsumerPipeBuilder<T>>();
 		private IConsumerPipeBuilder<T>? _messageAcknowledgmentPipeBuilder;
+		private LogExceptionConsumerPipe<T>.LogExceptionDelegate? _logDelegate;
 
 		public ConsumerOptionsBuilder<T> WithDefaultDeSerializer(SerializerDelegate<T> deserializer)
 		{
@@ -109,6 +110,12 @@ namespace Socolin.RabbitMQ.Client.Options.Consumer
 			return this;
 		}
 
+		public ConsumerOptionsBuilder<T> WithErrorLogging(LogExceptionConsumerPipe<T>.LogExceptionDelegate logDelegate)
+		{
+			_logDelegate = logDelegate;
+			return this;
+		}
+
 		public ConsumerOptions<T> Build()
 		{
 			if (_defaultDeserializer == null)
@@ -120,6 +127,7 @@ namespace Socolin.RabbitMQ.Client.Options.Consumer
 			};
 
 			options.Customs.AddRange(_customPipes);
+			options.LogDelegate = _logDelegate;
 
 			return options;
 		}
