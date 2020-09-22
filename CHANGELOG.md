@@ -1,6 +1,7 @@
 1.5
 
 - Add a new pipe to log processing exception in consumer pipe: `LogExceptionConsumerPipe`
+- Add a way to configure DeliveryMode on message `RabbitMqServiceOptionsBuilder.WithDeliveryMode()`
 
 1.4
 

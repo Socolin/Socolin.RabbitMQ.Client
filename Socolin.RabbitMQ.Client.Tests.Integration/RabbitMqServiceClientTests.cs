@@ -20,17 +20,18 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 		private string _queueName;
 		private RabbitMqServiceClient _serviceClient;
 		private RabbitMqConnectionManager _rabbitMqConnectionManager;
+		private RabbitMqServiceOptionsBuilder _baseOptionBuilder;
 
 		[SetUp]
 		public void Setup()
 		{
 			_rabbitMqConnectionManager = new RabbitMqConnectionManager(InitRabbitMqDocker.RabbitMqUri, nameof(RabbitMqServiceClientTests), TimeSpan.FromSeconds(20));
 
-			var options = new RabbitMqServiceOptionsBuilder()
+			_baseOptionBuilder = new RabbitMqServiceOptionsBuilder()
 				.WithRetry(TimeSpan.FromSeconds(15), null, TimeSpan.FromSeconds(1))
 				.WithConnectionManager(_rabbitMqConnectionManager)
-				.WithDefaultSerializer(message => Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(message)), "application/json")
-				.Build();
+				.WithDefaultSerializer(message => Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(message)), "application/json");
+			var options = _baseOptionBuilder.Build();
 			_serviceClient = new RabbitMqServiceClient(options);
 			_queueName = BaseQueueName + Guid.NewGuid();
 		}
@@ -144,6 +145,35 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 			await _serviceClient.EnqueueMessageAsync(_queueName, new {test = "second-" + randomMessage2});
 			using var channelContainer2 = await _rabbitMqConnectionManager.AcquireChannel();
 			var message2 = Encoding.UTF8.GetString(channelContainer2.Channel.BasicGet(_queueName, true).Body.Span);
+
+			using (new AssertionScope())
+			{
+				message1.Should().BeEquivalentTo($"{{\"test\":\"first-{randomMessage1}\"}}");
+				message2.Should().BeEquivalentTo($"{{\"test\":\"second-{randomMessage2}\"}}");
+			}
+		}
+
+		[Test]
+		[Explicit]
+		public async Task CaneEnqueuePersistentMessage()
+		{
+			var randomMessage1 = Guid.NewGuid();
+			var randomMessage2 = Guid.NewGuid();
+
+			var options = _baseOptionBuilder
+				.WithDeliveryMode(DeliveryMode.Persistent)
+				.Build();
+			_serviceClient = new RabbitMqServiceClient(options);
+			await _serviceClient.CreateQueueAsync(_queueName);
+
+			await _serviceClient.EnqueueMessageAsync(_queueName, new {test = "first-" + randomMessage1});
+
+			InitRabbitMqDocker.RestartRabbitMq();
+
+			await _serviceClient.EnqueueMessageAsync(_queueName, new {test = "second-" + randomMessage2});
+			using var channelContainer = await _rabbitMqConnectionManager.AcquireChannel();
+			var message1 = Encoding.UTF8.GetString(channelContainer.Channel.BasicGet(_queueName, true).Body.Span);
+			var message2 = Encoding.UTF8.GetString(channelContainer.Channel.BasicGet(_queueName, true).Body.Span);
 
 			using (new AssertionScope())
 			{

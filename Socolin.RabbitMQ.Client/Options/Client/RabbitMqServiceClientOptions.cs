@@ -14,6 +14,7 @@ namespace Socolin.RabbitMQ.Client.Options.Client
 		public IGenericClientPipeBuilder? Retry { get; set; }
 		public List<IClientPipeBuilder> CustomPipes { get; set; } = new List<IClientPipeBuilder>();
 		public PerMessageTtlOption? PerMessageTtl { get; set; }
+		public DeliveryMode? DeliveryMode { get; set; }
 
 		public RabbitMqServiceClientOptions(
 			IRabbitMqConnectionManager rabbitMqConnectionManager
@@ -45,7 +46,7 @@ namespace Socolin.RabbitMQ.Client.Options.Client
 					throw new NotSupportedException($"Builder {builder} is not supported");
 				})
 			);
-			pipes.Add(new PublishClientPipe());
+			pipes.Add(new PublishClientPipe(DeliveryMode));
 
 			return new ReadOnlyMemory<IClientPipe>(pipes.ToArray());
 		}
