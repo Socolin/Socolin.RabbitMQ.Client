@@ -13,6 +13,8 @@ namespace Socolin.RabbitMQ.Client.Pipes.Consumer
 	{
 		protected Task ProcessNextAsync(IConsumerPipeContext<T> context, ReadOnlyMemory<IConsumerPipe<T>> pipeline)
 		{
+			if (context.ActiveMessageProcessorCanceller.IsInterrupted())
+				return Task.CompletedTask;
 			return ExecutePipelineAsync(context, pipeline);
 		}
 

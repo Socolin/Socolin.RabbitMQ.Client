@@ -55,7 +55,7 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 				.Build();
 
 			await _serviceClient.CreateQueueAsync(_queueName, options);
-			var activeConsumer = await _serviceClient.StartListeningQueueAsync(_queueName, _consumerOptions, (message, items) => Task.CompletedTask);
+			var activeConsumer = await _serviceClient.StartListeningQueueAsync(_queueName, _consumerOptions, (message, items, ct) => Task.CompletedTask);
 			(await _serviceClient.GetMessageCountInQueueAsync(_queueName)).Should().Be(0);
 			activeConsumer.Cancel();
 			(await _serviceClient.GetMessageCountInQueueAsync(_queueName)).Should().Be(-1);
@@ -97,7 +97,7 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 			await _serviceClient.CreateQueueAsync(_errorQueueName, false);
 
 			await _serviceClient.CreateQueueAsync(_queueName, options);
-			var activeConsumer = await _serviceClient.StartListeningQueueAsync(_queueName, _consumerOptions, (message, items) => Task.FromException(new Exception("Test")));
+			var activeConsumer = await _serviceClient.StartListeningQueueAsync(_queueName, _consumerOptions, (message, items, ct) => Task.FromException(new Exception("Test")));
 			(await _serviceClient.GetMessageCountInQueueAsync(_errorQueueName)).Should().Be(0);
 			await _serviceClient.EnqueueMessageAsync(_queueName, "some-message");
 
@@ -205,12 +205,12 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 				.Build();
 			await _serviceClient.CreateQueueAsync(_queueName, options);
 
-			var activeConsumer1 = await _serviceClient.StartListeningQueueAsync(_queueName, _consumerOptions, (message, items) =>
+			var activeConsumer1 = await _serviceClient.StartListeningQueueAsync(_queueName, _consumerOptions, (message, items, ct) =>
 			{
 				usedConsumerIds.Add(1);
 				return Task.CompletedTask;
 			});
-			var activeConsumer2 = await _serviceClient.StartListeningQueueAsync(_queueName, _consumerOptions, (message, items) =>
+			var activeConsumer2 = await _serviceClient.StartListeningQueueAsync(_queueName, _consumerOptions, (message, items, ct) =>
 			{
 				usedConsumerIds.Add(2);
 				return Task.CompletedTask;

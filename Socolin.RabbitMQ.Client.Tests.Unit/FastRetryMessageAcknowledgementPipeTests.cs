@@ -42,7 +42,7 @@ namespace Socolin.RabbitMQ.Client.Tests.Unit
 				BasicProperties = _basicProperties
 			};
 			_channelMock = new Mock<IModel>(MockBehavior.Strict);
-			_consumerPipeContext = new ConsumerPipeContext<string>(_channelMock.Object, _basicDeliverEventArgs, (items, message) => Task.CompletedTask);
+			_consumerPipeContext = new ConsumerPipeContext<string>(_channelMock.Object, _basicDeliverEventArgs, (items, message, ct) => Task.CompletedTask, Mock.Of<IActiveMessageProcessorCanceller>());
 		}
 
 		[Test]

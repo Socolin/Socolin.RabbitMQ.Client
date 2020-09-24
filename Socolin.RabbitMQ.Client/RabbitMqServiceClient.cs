@@ -131,25 +131,36 @@ namespace Socolin.RabbitMQ.Client
 		public async Task<IActiveConsumer> StartListeningQueueAsync<T>(string queueName, ConsumerOptions<T> consumerOptions, ProcessorMessageDelegate<T> messageProcessor) where T : class
 		{
 			var consumerPipeline = consumerOptions.BuildPipeline();
+			var activeMessageProcessorCanceller = new ActiveMessageProcessorCanceller();
 
 			const string consumerTagKey = "consumerTag";
 			var pipeContext = new ClientPipeContextAction((channel, context) =>
 			{
-				var consumerTag = BeginConsumeQueue(channel, queueName, consumerPipeline, messageProcessor);
+				var consumerTag = BeginConsumeQueue(channel, queueName, consumerPipeline, messageProcessor, activeMessageProcessorCanceller);
 				context.Items[consumerTagKey] = consumerTag;
 				return Task.CompletedTask;
 			});
 			await ClientPipe.ExecutePipelineAsync(pipeContext, _consumerPipeline.Value);
 
-			return new ActiveConsumer(pipeContext.GetItemValue<string>(consumerTagKey), pipeContext.ChannelContainer!);
+			return new ActiveConsumer(pipeContext.GetItemValue<string>(consumerTagKey), pipeContext.ChannelContainer!, activeMessageProcessorCanceller);
 		}
 
-		private string BeginConsumeQueue<T>(IModel channel, string queueName, ReadOnlyMemory<IConsumerPipe<T>> consumerPipeline, ProcessorMessageDelegate<T> messageProcessor) where T : class
+		// create new class that handle all cancel Logic: (Create pipe too)
+		// - Immediate cancel: Cancel token given to the pipeline, and wait it to leave (catch in finally ?)
+		// - Do not cancel token, but when it's been cancelled, if a task is in progress then it should wait the task to complete.
+
+		private string BeginConsumeQueue<T>(
+			IModel channel,
+			string queueName,
+			ReadOnlyMemory<IConsumerPipe<T>> consumerPipeline,
+			ProcessorMessageDelegate<T> messageProcessor,
+			ActiveMessageProcessorCanceller activeMessageProcessorCanceller
+		) where T : class
 		{
 			var consumer = new AsyncEventingBasicConsumer(channel);
 			consumer.Received += async (_, message) =>
 			{
-				var consumerPipeContext = new ConsumerPipeContext<T>(channel, message, messageProcessor);
+				var consumerPipeContext = new ConsumerPipeContext<T>(channel, message, messageProcessor, activeMessageProcessorCanceller);
 				await ConsumerPipe<T>.ExecutePipelineAsync(consumerPipeContext, consumerPipeline);
 			};
 

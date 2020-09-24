@@ -34,7 +34,7 @@ var consumerOptions = new ConsumerOptionsBuilder<string>()
     .WithDefaultDeSerializer(message => JsonConvert.DeserializeObject<string>(Encoding.UTF8.GetString(message.Span)))
     .WithSimpleMessageAck()
     .Build();
-var activeConsumer = await serviceClient.StartListeningQueueAsync(queueName, consumerOptions, (message, items) =>
+var activeConsumer = await serviceClient.StartListeningQueueAsync(queueName, consumerOptions, (message, items, ct) =>
 {
     Console.WriteLine(message);
     return Task.CompletedTask;

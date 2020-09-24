@@ -66,7 +66,7 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 				.WithDelayedRetryMessageAck(new[] {TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2)})
 				.Build();
 
-			await _serviceClient.StartListeningQueueAsync(_queueName, consumerOptions, (message, _) =>
+			await _serviceClient.StartListeningQueueAsync(_queueName, consumerOptions, (message, _, ct) =>
 			{
 				actualMessages.Add(message);
 				semaphore.Release();

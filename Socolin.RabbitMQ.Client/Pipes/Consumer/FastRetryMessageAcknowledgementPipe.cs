@@ -28,6 +28,9 @@ namespace Socolin.RabbitMQ.Client.Pipes.Consumer
 			try
 			{
 				await ProcessNextAsync(context, pipeline);
+				if (context.ActiveMessageProcessorCanceller.IsInterrupted())
+					return;
+
 				context.Chanel.BasicAck(rMessage.DeliveryTag, false);
 			}
 			catch (Exception)

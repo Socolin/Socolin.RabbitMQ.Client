@@ -22,6 +22,7 @@ namespace Socolin.RabbitMQ.Client.Options.Consumer
 		{
 			var pipeline = new List<IConsumerPipe<T>>
 			{
+				new CancellerConsumerPipe<T>(),
 				new DeserializerConsumerPipe<T>(Deserialization)
 			};
 

@@ -1,3 +1,10 @@
+1.6
+
+- `StartListeningQueueAsync` delegate will now take CancellationToken as 3rd argument.
+- Add new methods on `IActiveConsumer` to choose how to cancel the current processing
+    - `CancelAfterCurrentTaskCompletedAsync()` will prevent further processing after the current processing message has been completed.
+    - `CancelAsync()` will cancel the token given to the `StartListeningQueueAsync` and cancel further processing.
+
 1.5.1
 
 - default deserializer is now optional if another deserializer has been specified

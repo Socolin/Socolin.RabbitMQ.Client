@@ -196,7 +196,7 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 				.WithSimpleMessageAck()
 				.Build();
 
-			await _serviceClient.StartListeningQueueAsync(_queueName, consumerOptions, (message, _) =>
+			await _serviceClient.StartListeningQueueAsync(_queueName, consumerOptions, (message, _, ct) =>
 			{
 				actualMessages.Add(message);
 				semaphore.Release();
@@ -226,7 +226,7 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 				.WithDefaultDeSerializer(message => JsonConvert.DeserializeObject<string>(Encoding.UTF8.GetString(message.Span)))
 				.WithSimpleMessageAck()
 				.Build();
-			await _serviceClient.StartListeningQueueAsync(_queueName, consumerOptions, (message, _) =>
+			await _serviceClient.StartListeningQueueAsync(_queueName, consumerOptions, (message, _, ct) =>
 			{
 				actualMessages.Add(message);
 				semaphore.Release();
@@ -257,7 +257,7 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 				.WithDefaultDeSerializer(message => JsonConvert.DeserializeObject<string>(Encoding.UTF8.GetString(message.Span)))
 				.WithSimpleMessageAck()
 				.Build();
-			var activeConsumer = await _serviceClient.StartListeningQueueAsync(_queueName, consumerOptions, (message, _) =>
+			var activeConsumer = await _serviceClient.StartListeningQueueAsync(_queueName, consumerOptions, (message, _, ct) =>
 			{
 				actualMessages.Add(message);
 				semaphore.Release();
@@ -291,7 +291,7 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 				.WithDefaultDeSerializer(message => JsonConvert.DeserializeObject<string>(Encoding.UTF8.GetString(message.Span)))
 				.Build();
 
-			await _serviceClient.StartListeningQueueAsync(_queueName, consumerOptions, (message, _) =>
+			await _serviceClient.StartListeningQueueAsync(_queueName, consumerOptions, (message, _, ct) =>
 			{
 				actualMessages.Add(message);
 				semaphore.Release();
@@ -309,6 +309,5 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 			actualMessages.Should().BeEquivalentTo(randomMessage1, randomMessage2, randomMessage3);
 			(await _serviceClient.GetMessageCountInQueueAsync(_queueName)).Should().Be(0);
 		}
-
 	}
 }

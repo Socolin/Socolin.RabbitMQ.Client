@@ -42,7 +42,7 @@ namespace Socolin.RabbitMQ.Client.Example
 					Console.WriteLine("Some logging message after processing");
 				})
 				.Build();
-			var activeConsumer = await serviceClient.StartListeningQueueAsync(queueName, consumerOptions, (message, items) =>
+			var activeConsumer = await serviceClient.StartListeningQueueAsync(queueName, consumerOptions, (message, items, ct) =>
 			{
 				Console.WriteLine(message);
 				return Task.CompletedTask;

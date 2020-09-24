@@ -8,7 +8,7 @@ namespace Socolin.RabbitMQ.Client.Pipes.Consumer
 	{
 		public Task ProcessAsync(IConsumerPipeContext<T> context, ReadOnlyMemory<IConsumerPipe<T>> pipeline)
 		{
-			return context.MessageProcessor.Invoke(context.DeserializedMessage!, context.Items);
+			return context.MessageProcessor.Invoke(context.DeserializedMessage!, context.Items, context.ActiveMessageProcessorCanceller.InterruptInProgressProcessorToken);
 		}
 	}
 }
