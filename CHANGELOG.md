@@ -3,6 +3,8 @@
 - Follow [RabbitMQ recommendations](https://www.cloudamqp.com/blog/2018-01-19-part4-rabbitmq-13-common-errors.html) about connections 
     - 1 connection for publishing
     - 1 connection for consuming
+- When using `.WithSerializer()` define default deserializer with it if none has been defined
+
 
 1.6
 

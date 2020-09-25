@@ -70,6 +70,12 @@ namespace Socolin.RabbitMQ.Client.Options.Client
 			if (contentType != null)
 				_serializers[contentType] = serializer;
 
+			if (_serializer == null)
+			{
+				_serializer = serializer;
+				_contentType = contentType;
+			}
+
 			return this;
 		}
 
