@@ -18,12 +18,14 @@ namespace Socolin.RabbitMQ.Client.Tests.Unit
 
 		private FastRetryMessageAcknowledgementPipe<string> _pipe;
 
+		private Mock<IRabbitMqConnectionManager> _rabbitMqConnectionManager;
 		private ConsumerPipeContext<string> _consumerPipeContext;
 		private Mock<IModel> _channelMock;
 		private Mock<IConsumerPipe<string>> _nextPipeMock;
 		private ReadOnlyMemory<IConsumerPipe<string>> _fakePipeline;
 		private BasicDeliverEventArgs _basicDeliverEventArgs;
 		private FakeBasicProperties _basicProperties;
+		private Mock<IModel> _publishChannelMock;
 
 		[SetUp]
 		public void Setup()
@@ -41,8 +43,13 @@ namespace Socolin.RabbitMQ.Client.Tests.Unit
 				Body = Body,
 				BasicProperties = _basicProperties
 			};
+			_rabbitMqConnectionManager = new Mock<IRabbitMqConnectionManager>(MockBehavior.Strict);
 			_channelMock = new Mock<IModel>(MockBehavior.Strict);
-			_consumerPipeContext = new ConsumerPipeContext<string>(_channelMock.Object, _basicDeliverEventArgs, (items, message, ct) => Task.CompletedTask, Mock.Of<IActiveMessageProcessorCanceller>());
+			_consumerPipeContext = new ConsumerPipeContext<string>(_rabbitMqConnectionManager.Object, _channelMock.Object, _basicDeliverEventArgs, (items, message, ct) => Task.CompletedTask, Mock.Of<IActiveMessageProcessorCanceller>());
+
+			_publishChannelMock = new Mock<IModel>();
+			_rabbitMqConnectionManager.Setup(m => m.AcquireChannel(ChannelType.Publish))
+				.ReturnsAsync(() => new ChannelContainer(Mock.Of<IRabbitMqChannelManager>(), _publishChannelMock.Object));
 		}
 
 		[Test]
@@ -62,7 +69,7 @@ namespace Socolin.RabbitMQ.Client.Tests.Unit
 		public void ProcessAsync_WhenProcessFail_AddHeaderOnMessageAndRepublishIt_AndAcknowledgeCurrentMessage()
 		{
 			var s = new MockSequence();
-			_channelMock.InSequence(s).Setup(m => m.BasicPublish(RabbitMqConstants.DefaultExchangeName, RoutingKey, true, _basicProperties, Body));
+			_publishChannelMock.InSequence(s).Setup(m => m.BasicPublish(RabbitMqConstants.DefaultExchangeName, RoutingKey, true, _basicProperties, Body));
 			_channelMock.InSequence(s).Setup(m => m.BasicAck(DeliveryTag, false));
 
 			_nextPipeMock.Setup(m => m.ProcessAsync(_consumerPipeContext, It.IsAny<ReadOnlyMemory<IConsumerPipe<string>>>()))
@@ -72,7 +79,7 @@ namespace Socolin.RabbitMQ.Client.Tests.Unit
 
 			Assert.That(_basicProperties.Headers.ContainsKey("RetryCount"), Is.True);
 			Assert.That(_basicProperties.Headers["RetryCount"], Is.EqualTo(1));
-			_channelMock.Verify(m => m.BasicPublish(RabbitMqConstants.DefaultExchangeName, RoutingKey, true, _basicProperties, Body), Times.Once);
+			_publishChannelMock.Verify(m => m.BasicPublish(RabbitMqConstants.DefaultExchangeName, RoutingKey, true, _basicProperties, Body), Times.Once);
 			_channelMock.Verify(m => m.BasicAck(DeliveryTag, false), Times.Once);
 		}
 
@@ -81,7 +88,7 @@ namespace Socolin.RabbitMQ.Client.Tests.Unit
 		public void ProcessAsync_WhenProcessFail_IncrementRetryCount_AndRepublishMessageAndAckCurrentMessage()
 		{
 			var s = new MockSequence();
-			_channelMock.InSequence(s).Setup(m => m.BasicPublish(RabbitMqConstants.DefaultExchangeName, RoutingKey, true, _basicProperties, Body));
+			_publishChannelMock.InSequence(s).Setup(m => m.BasicPublish(RabbitMqConstants.DefaultExchangeName, RoutingKey, true, _basicProperties, Body));
 			_channelMock.InSequence(s).Setup(m => m.BasicAck(DeliveryTag, false));
 
 			_basicProperties.Headers = new Dictionary<string, object> {["RetryCount"] = 1};
@@ -91,7 +98,7 @@ namespace Socolin.RabbitMQ.Client.Tests.Unit
 			_pipe.ProcessAsync(_consumerPipeContext, _fakePipeline);
 
 			Assert.That(_basicProperties.Headers["RetryCount"], Is.EqualTo(2));
-			_channelMock.Verify(m => m.BasicPublish(RabbitMqConstants.DefaultExchangeName, RoutingKey, true, _basicProperties, Body), Times.Once);
+			_publishChannelMock.Verify(m => m.BasicPublish(RabbitMqConstants.DefaultExchangeName, RoutingKey, true, _basicProperties, Body), Times.Once);
 			_channelMock.Verify(m => m.BasicAck(DeliveryTag, false), Times.Once);
 		}
 

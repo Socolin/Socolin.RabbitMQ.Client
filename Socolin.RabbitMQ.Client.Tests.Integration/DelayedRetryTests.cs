@@ -43,7 +43,7 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 			{
 				try
 				{
-					using var channelContainer = await _rabbitMqConnectionManager.AcquireChannel();
+					using var channelContainer = await _rabbitMqConnectionManager.AcquireChannel(ChannelType.Publish);
 					channelContainer.Channel.QueueDelete(_queueName, false, false);
 				}
 				catch (Exception)

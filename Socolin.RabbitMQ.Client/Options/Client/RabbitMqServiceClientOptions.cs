@@ -31,7 +31,7 @@ namespace Socolin.RabbitMQ.Client.Options.Client
 
 			if (Retry != null)
 				pipes.Add(Retry.BuildPipe());
-			pipes.Add(new ConnectionClientPipe(RabbitMqConnectionManager));
+			pipes.Add(new ConnectionClientPipe(RabbitMqConnectionManager, ChannelType.Publish));
 			pipes.Add(new SerializerClientPipe(Serialization));
 			if (PerMessageTtl != null)
 				pipes.Add(new MessageTtlClientPipe(PerMessageTtl.PerMessageTTl));
@@ -57,7 +57,7 @@ namespace Socolin.RabbitMQ.Client.Options.Client
 
 			if (Retry != null)
 				pipes.Add(Retry.BuildPipe());
-			pipes.Add(new ConnectionClientPipe(RabbitMqConnectionManager));
+			pipes.Add(new ConnectionClientPipe(RabbitMqConnectionManager, ChannelType.Publish));
 			pipes.AddRange(CustomPipes
 				.Where(builder => builder is IActionClientPipeBuilder || builder is IGenericClientPipeBuilder)
 				.Select(builder =>
@@ -80,7 +80,7 @@ namespace Socolin.RabbitMQ.Client.Options.Client
 
 			if (Retry != null)
 				pipes.Add(Retry.BuildPipe());
-			pipes.Add(new PersistentConnectionClientPipe(RabbitMqConnectionManager));
+			pipes.Add(new PersistentConnectionClientPipe(RabbitMqConnectionManager, ChannelType.Consumer));
 			pipes.Add(new ExecuteActionClientPipe());
 
 			return new ReadOnlyMemory<IClientPipe>(pipes.ToArray());

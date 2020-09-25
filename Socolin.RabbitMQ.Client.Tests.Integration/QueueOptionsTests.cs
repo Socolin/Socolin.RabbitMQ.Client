@@ -139,7 +139,7 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 			await _serviceClient.EnqueueMessageAsync(_queueName, "some-message-2");
 			await Task.Delay(TimeSpan.FromMilliseconds(100));
 			(await _serviceClient.GetMessageCountInQueueAsync(_queueName)).Should().Be(1);
-			using var channelContainer = await _rabbitMqConnectionManager.AcquireChannel();
+			using var channelContainer = await _rabbitMqConnectionManager.AcquireChannel(ChannelType.Consumer);
 			var message = Encoding.UTF8.GetString(channelContainer.Channel.BasicGet(_queueName, true).Body.Span);
 			message.Should().Be("\"some-message-1\"");
 		}
@@ -160,7 +160,7 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 			await Task.Delay(TimeSpan.FromMilliseconds(100));
 			(await _serviceClient.GetMessageCountInQueueAsync(_queueName)).Should().Be(1);
 
-			using var channelContainer = await _rabbitMqConnectionManager.AcquireChannel();
+			using var channelContainer = await _rabbitMqConnectionManager.AcquireChannel(ChannelType.Consumer);
 			var message = Encoding.UTF8.GetString(channelContainer.Channel.BasicGet(_queueName, true).Body.Span);
 			message.Should().Be("\"some-message-2\"");
 		}
@@ -189,7 +189,7 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 			(await _serviceClient.GetMessageCountInQueueAsync(_queueName)).Should().Be(1);
 			(await _serviceClient.GetMessageCountInQueueAsync(_errorQueueName)).Should().Be(1);
 
-			using var channelContainer = await _rabbitMqConnectionManager.AcquireChannel();
+			using var channelContainer = await _rabbitMqConnectionManager.AcquireChannel(ChannelType.Consumer);
 			var message = Encoding.UTF8.GetString(channelContainer.Channel.BasicGet(_queueName, true).Body.Span);
 			message.Should().Be("\"some-message-1\"");
 			var messageError = Encoding.UTF8.GetString(channelContainer.Channel.BasicGet(_errorQueueName, true).Body.Span);

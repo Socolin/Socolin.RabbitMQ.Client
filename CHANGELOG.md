@@ -1,3 +1,9 @@
+1.7
+
+- Follow [RabbitMQ recommendations](https://www.cloudamqp.com/blog/2018-01-19-part4-rabbitmq-13-common-errors.html) about connections 
+    - 1 connection for publishing
+    - 1 connection for consuming
+
 1.6
 
 - `StartListeningQueueAsync` delegate will now take CancellationToken as 3rd argument.

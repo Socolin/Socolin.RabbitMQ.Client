@@ -43,7 +43,7 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 			{
 				try
 				{
-					using var channelContainer = await _rabbitMqConnectionManager.AcquireChannel();
+					using var channelContainer = await _rabbitMqConnectionManager.AcquireChannel(ChannelType.Publish);
 					channelContainer.Channel.QueueDelete(_queueName, false, false);
 				}
 				catch (Exception)
@@ -63,7 +63,7 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 			await _serviceClient.CreateQueueAsync(_queueName);
 			await _serviceClient.EnqueueMessageAsync(_queueName, new {test = randomMessage});
 
-			using var channelContainer = await _rabbitMqConnectionManager.AcquireChannel();
+			using var channelContainer = await _rabbitMqConnectionManager.AcquireChannel(ChannelType.Consumer);
 			var message = channelContainer.Channel.BasicGet(_queueName, true);
 			Encoding.UTF8.GetString(message.Body.Span).Should().BeEquivalentTo($"{{\"test\":\"{randomMessage}\"}}");
 		}
@@ -76,7 +76,7 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 			await _serviceClient.CreateQueueAsync(_queueName);
 			await _serviceClient.CreateQueueClient(_queueName).EnqueueMessageAsync(new {test = randomMessage});
 
-			using var channelContainer = await _rabbitMqConnectionManager.AcquireChannel();
+			using var channelContainer = await _rabbitMqConnectionManager.AcquireChannel(ChannelType.Consumer);
 			var message = channelContainer.Channel.BasicGet(_queueName, true);
 			Encoding.UTF8.GetString(message.Body.Span).Should().BeEquivalentTo($"{{\"test\":\"{randomMessage}\"}}");
 		}
@@ -84,7 +84,7 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 		[Test]
 		public async Task CanPurgeQueue()
 		{
-			using var channelContainer = await _rabbitMqConnectionManager.AcquireChannel();
+			using var channelContainer = await _rabbitMqConnectionManager.AcquireChannel(ChannelType.Publish);
 			channelContainer.Channel.QueueDeclare(_queueName, true, false, false, null);
 			channelContainer.Channel.BasicPublish(RabbitMqConstants.DefaultExchangeName, _queueName, true, null, new byte[] {0x42});
 
@@ -97,7 +97,7 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 		[Test]
 		public async Task CanDeleteQueue()
 		{
-			using var channelContainer = await _rabbitMqConnectionManager.AcquireChannel();
+			using var channelContainer = await _rabbitMqConnectionManager.AcquireChannel(ChannelType.Publish);
 			channelContainer.Channel.QueueDeclare(_queueName, true, false, false, null);
 			channelContainer.Channel.BasicPublish(RabbitMqConstants.DefaultExchangeName, _queueName, true, null, new byte[] {0x42});
 
@@ -111,7 +111,7 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 		[Test]
 		public async Task CanGetMessageCount()
 		{
-			using var channelContainer = await _rabbitMqConnectionManager.AcquireChannel();
+			using var channelContainer = await _rabbitMqConnectionManager.AcquireChannel(ChannelType.Publish);
 			channelContainer.Channel.QueueDeclare(_queueName, true, false, false, null);
 			channelContainer.Channel.BasicPublish(RabbitMqConstants.DefaultExchangeName, _queueName, true, null, new byte[] {0x42});
 			channelContainer.Channel.BasicPublish(RabbitMqConstants.DefaultExchangeName, _queueName, true, null, new byte[] {0x42});
@@ -137,13 +137,13 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 			await _serviceClient.CreateQueueAsync(_queueName);
 
 			await _serviceClient.EnqueueMessageAsync(_queueName, new {test = "first-" + randomMessage1});
-			using var channelContainer = await _rabbitMqConnectionManager.AcquireChannel();
+			using var channelContainer = await _rabbitMqConnectionManager.AcquireChannel(ChannelType.Consumer);
 			var message1 = Encoding.UTF8.GetString(channelContainer.Channel.BasicGet(_queueName, true).Body.Span);
 
 			InitRabbitMqDocker.RestartRabbitMq();
 
 			await _serviceClient.EnqueueMessageAsync(_queueName, new {test = "second-" + randomMessage2});
-			using var channelContainer2 = await _rabbitMqConnectionManager.AcquireChannel();
+			using var channelContainer2 = await _rabbitMqConnectionManager.AcquireChannel(ChannelType.Consumer);
 			var message2 = Encoding.UTF8.GetString(channelContainer2.Channel.BasicGet(_queueName, true).Body.Span);
 
 			using (new AssertionScope())
@@ -171,7 +171,7 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 			InitRabbitMqDocker.RestartRabbitMq();
 
 			await _serviceClient.EnqueueMessageAsync(_queueName, new {test = "second-" + randomMessage2});
-			using var channelContainer = await _rabbitMqConnectionManager.AcquireChannel();
+			using var channelContainer = await _rabbitMqConnectionManager.AcquireChannel(ChannelType.Consumer);
 			var message1 = Encoding.UTF8.GetString(channelContainer.Channel.BasicGet(_queueName, true).Body.Span);
 			var message2 = Encoding.UTF8.GetString(channelContainer.Channel.BasicGet(_queueName, true).Body.Span);
 

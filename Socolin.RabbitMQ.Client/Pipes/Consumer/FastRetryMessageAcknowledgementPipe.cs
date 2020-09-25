@@ -39,13 +39,15 @@ namespace Socolin.RabbitMQ.Client.Pipes.Consumer
 				{
 					rMessage.BasicProperties.Headers ??= new Dictionary<string, object>();
 					rMessage.BasicProperties.Headers[_retryCountHeaderName] = 1;
-					context.Chanel.BasicPublish(RabbitMqConstants.DefaultExchangeName, rMessage.RoutingKey, true, rMessage.BasicProperties, rMessage.Body);
+					using (var channelContainer = await context.ConnectionManager.AcquireChannel(ChannelType.Publish))
+						channelContainer.Channel.BasicPublish(RabbitMqConstants.DefaultExchangeName, rMessage.RoutingKey, true, rMessage.BasicProperties, rMessage.Body);
 					context.Chanel.BasicAck(rMessage.DeliveryTag, false);
 				}
 				else if (rMessage.BasicProperties.Headers?[_retryCountHeaderName] is int retryCount && retryCount < _maximumRetryCount)
 				{
 					rMessage.BasicProperties.Headers[_retryCountHeaderName] = retryCount + 1;
-					context.Chanel.BasicPublish(RabbitMqConstants.DefaultExchangeName, rMessage.RoutingKey, true, rMessage.BasicProperties, rMessage.Body);
+					using (var channelContainer = await context.ConnectionManager.AcquireChannel(ChannelType.Publish))
+						channelContainer.Channel.BasicPublish(RabbitMqConstants.DefaultExchangeName, rMessage.RoutingKey, true, rMessage.BasicProperties, rMessage.Body);
 					context.Chanel.BasicAck(rMessage.DeliveryTag, false);
 				}
 				else

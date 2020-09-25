@@ -43,14 +43,16 @@ namespace Socolin.RabbitMQ.Client.Pipes.Consumer
 					rMessage.BasicProperties.Headers ??= new Dictionary<string, object>();
 					rMessage.BasicProperties.Headers[_retryCountHeaderName] = 1;
 					rMessage.BasicProperties.Expiration = _retryDelays[0].TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
-					context.Chanel.BasicPublish(RabbitMqConstants.DefaultExchangeName, _delayedMessagesQueueName ?? DelayedQueueName(rMessage.RoutingKey), true, rMessage.BasicProperties, rMessage.Body);
+					using (var channelContainer = await context.ConnectionManager.AcquireChannel(ChannelType.Publish))
+						channelContainer.Channel.BasicPublish(RabbitMqConstants.DefaultExchangeName, _delayedMessagesQueueName ?? DelayedQueueName(rMessage.RoutingKey), true, rMessage.BasicProperties, rMessage.Body);
 					context.Chanel.BasicAck(rMessage.DeliveryTag, false);
 				}
 				else if (rMessage.BasicProperties.Headers?[_retryCountHeaderName] is int retryCount && retryCount < _retryDelays.Length)
 				{
 					rMessage.BasicProperties.Headers[_retryCountHeaderName] = retryCount + 1;
 					rMessage.BasicProperties.Expiration = _retryDelays[retryCount].TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
-					context.Chanel.BasicPublish(RabbitMqConstants.DefaultExchangeName, _delayedMessagesQueueName ?? DelayedQueueName(rMessage.RoutingKey), true, rMessage.BasicProperties, rMessage.Body);
+					using (var channelContainer = await context.ConnectionManager.AcquireChannel(ChannelType.Publish))
+						channelContainer.Channel.BasicPublish(RabbitMqConstants.DefaultExchangeName, _delayedMessagesQueueName ?? DelayedQueueName(rMessage.RoutingKey), true, rMessage.BasicProperties, rMessage.Body);
 					context.Chanel.BasicAck(rMessage.DeliveryTag, false);
 				}
 				else

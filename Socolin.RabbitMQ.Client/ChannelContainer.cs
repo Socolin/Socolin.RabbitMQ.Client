@@ -5,18 +5,18 @@ namespace Socolin.RabbitMQ.Client
 {
 	public class ChannelContainer : IDisposable
 	{
-		private readonly IRabbitMqConnectionManager _connectionManager;
+		private readonly IRabbitMqChannelManager _channelManager;
 		public readonly IModel Channel;
 
-		public ChannelContainer(IRabbitMqConnectionManager connectionManager, IModel channel)
+		public ChannelContainer(IRabbitMqChannelManager channelManager, IModel channel)
 		{
-			_connectionManager = connectionManager;
+			_channelManager = channelManager;
 			Channel = channel;
 		}
 
 		public void Dispose()
 		{
-			_connectionManager.ReleaseChannel(Channel);
+			_channelManager.ReleaseChannel(Channel);
 		}
 	}
 }

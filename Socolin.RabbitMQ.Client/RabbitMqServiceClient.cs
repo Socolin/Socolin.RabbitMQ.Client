@@ -33,9 +33,11 @@ namespace Socolin.RabbitMQ.Client
 		private readonly Lazy<ReadOnlyMemory<IClientPipe>> _messagePipeline;
 		private readonly Lazy<ReadOnlyMemory<IClientPipe>> _actionPipeline;
 		private readonly Lazy<ReadOnlyMemory<IClientPipe>> _consumerPipeline;
+		private RabbitMqServiceClientOptions _options;
 
 		public RabbitMqServiceClient(RabbitMqServiceClientOptions options)
 		{
+			_options = options;
 			_messagePipeline = new Lazy<ReadOnlyMemory<IClientPipe>>(options.BuildMessagePipeline);
 			_actionPipeline = new Lazy<ReadOnlyMemory<IClientPipe>>(options.BuildActionPipeline);
 			_consumerPipeline = new Lazy<ReadOnlyMemory<IClientPipe>>(options.BuildConsumerPipeline);
@@ -160,7 +162,7 @@ namespace Socolin.RabbitMQ.Client
 			var consumer = new AsyncEventingBasicConsumer(channel);
 			consumer.Received += async (_, message) =>
 			{
-				var consumerPipeContext = new ConsumerPipeContext<T>(channel, message, messageProcessor, activeMessageProcessorCanceller);
+				var consumerPipeContext = new ConsumerPipeContext<T>(_options.RabbitMqConnectionManager, channel, message, messageProcessor, activeMessageProcessorCanceller);
 				await ConsumerPipe<T>.ExecutePipelineAsync(consumerPipeContext, consumerPipeline);
 			};
 

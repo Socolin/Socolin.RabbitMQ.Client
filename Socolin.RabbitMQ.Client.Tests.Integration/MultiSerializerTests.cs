@@ -41,7 +41,7 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 			{
 				try
 				{
-					using var channelContainer = await _rabbitMqConnectionManager.AcquireChannel();
+					using var channelContainer = await _rabbitMqConnectionManager.AcquireChannel(ChannelType.Publish);
 					channelContainer.Channel.QueueDelete(_queueName, false, false);
 				}
 				catch (Exception)
@@ -60,7 +60,7 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 			await _serviceClient.EnqueueMessageAsync(_queueName, new {test = "test1"}, "application/json");
 			await _serviceClient.EnqueueMessageAsync(_queueName, new {test = "test2"}, "application/bson");
 
-			using var channelContainer = await _rabbitMqConnectionManager.AcquireChannel();
+			using var channelContainer = await _rabbitMqConnectionManager.AcquireChannel(ChannelType.Consumer);
 			var message1 = channelContainer.Channel.BasicGet(_queueName, true);
 			message1.BasicProperties.ContentType.Should().Be("application/json");
 			Encoding.UTF8.GetString(message1.Body.Span).Should().BeEquivalentTo("{\"test\":\"test1\"}");
