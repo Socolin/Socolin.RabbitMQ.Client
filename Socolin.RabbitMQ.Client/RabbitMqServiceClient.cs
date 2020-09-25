@@ -132,13 +132,12 @@ namespace Socolin.RabbitMQ.Client
 
 		public async Task<IActiveConsumer> StartListeningQueueAsync<T>(string queueName, ConsumerOptions<T> consumerOptions, ProcessorMessageDelegate<T> messageProcessor) where T : class
 		{
-			var consumerPipeline = consumerOptions.BuildPipeline();
 			var activeMessageProcessorCanceller = new ActiveMessageProcessorCanceller();
 
 			const string consumerTagKey = "consumerTag";
 			var pipeContext = new ClientPipeContextAction((channel, context) =>
 			{
-				var consumerTag = BeginConsumeQueue(channel, queueName, consumerPipeline, messageProcessor, activeMessageProcessorCanceller);
+				var consumerTag = BeginConsumeQueue(channel, queueName, consumerOptions, messageProcessor, activeMessageProcessorCanceller);
 				context.Items[consumerTagKey] = consumerTag;
 				return Task.CompletedTask;
 			});
@@ -154,7 +153,7 @@ namespace Socolin.RabbitMQ.Client
 		private string BeginConsumeQueue<T>(
 			IModel channel,
 			string queueName,
-			ReadOnlyMemory<IConsumerPipe<T>> consumerPipeline,
+			ConsumerOptions<T> consumerOptions,
 			ProcessorMessageDelegate<T> messageProcessor,
 			ActiveMessageProcessorCanceller activeMessageProcessorCanceller
 		) where T : class
@@ -163,8 +162,11 @@ namespace Socolin.RabbitMQ.Client
 			consumer.Received += async (_, message) =>
 			{
 				var consumerPipeContext = new ConsumerPipeContext<T>(_options.RabbitMqConnectionManager, channel, message, messageProcessor, activeMessageProcessorCanceller);
-				await ConsumerPipe<T>.ExecutePipelineAsync(consumerPipeContext, consumerPipeline);
+				await ConsumerPipe<T>.ExecutePipelineAsync(consumerPipeContext, consumerOptions.BuildPipeline());
 			};
+
+			if (consumerOptions.PrefetchCount.HasValue)
+				channel.BasicQos(0, consumerOptions.PrefetchCount.Value, false);
 
 			return channel.BasicConsume(queueName, false, consumer);
 		}

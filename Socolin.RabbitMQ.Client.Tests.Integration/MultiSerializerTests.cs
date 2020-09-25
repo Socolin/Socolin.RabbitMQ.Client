@@ -59,6 +59,7 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 			await _serviceClient.CreateQueueAsync(_queueName);
 			await _serviceClient.EnqueueMessageAsync(_queueName, new {test = "test1"}, "application/json");
 			await _serviceClient.EnqueueMessageAsync(_queueName, new {test = "test2"}, "application/bson");
+			await Task.Delay(TimeSpan.FromMilliseconds(100));
 
 			using var channelContainer = await _rabbitMqConnectionManager.AcquireChannel(ChannelType.Consumer);
 			var message1 = channelContainer.Channel.BasicGet(_queueName, true);

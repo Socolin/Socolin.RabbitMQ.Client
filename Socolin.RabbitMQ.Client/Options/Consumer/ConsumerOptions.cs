@@ -12,6 +12,7 @@ namespace Socolin.RabbitMQ.Client.Options.Consumer
 		public List<IConsumerPipeBuilder<T>> Customs { get; set; } = new List<IConsumerPipeBuilder<T>>();
 		public IConsumerPipeBuilder<T>? MessageAcknowledgmentPipeBuilder { get; set; }
 		public LogExceptionConsumerPipe<T>.LogExceptionDelegate? LogDelegate { get; set; }
+		public ushort? PrefetchCount { get; set; }
 
 		public ConsumerOptions(DeserializationPipeOptions<T> deserialization)
 		{

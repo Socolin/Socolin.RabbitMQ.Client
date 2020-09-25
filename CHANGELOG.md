@@ -1,3 +1,7 @@
+1.7.2
+
+- Add new consumer option to choose consumer prefetch count
+
 1.7.1
 
 - Rework Consumer pipeline. Since deserialization can fail, it has been move after the _Log Exception Pipe_ and after the _Message Ack Pipe_, so it does not "lock" the consumer when deserializer fail.
