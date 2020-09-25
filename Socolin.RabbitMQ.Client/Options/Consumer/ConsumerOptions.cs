@@ -22,14 +22,14 @@ namespace Socolin.RabbitMQ.Client.Options.Consumer
 		{
 			var pipeline = new List<IConsumerPipe<T>>
 			{
-				new CancellerConsumerPipe<T>(),
-				new DeserializerConsumerPipe<T>(Deserialization)
+				new CancellerConsumerPipe<T>()
 			};
 
 			if (MessageAcknowledgmentPipeBuilder != null)
 				pipeline.Add(MessageAcknowledgmentPipeBuilder.Build());
 			if (LogDelegate != null)
 				pipeline.Add(new LogExceptionConsumerPipe<T>(LogDelegate));
+			pipeline.Add(new DeserializerConsumerPipe<T>(Deserialization));
 
 			pipeline.AddRange(Customs.Select(builder => builder.Build()));
 			pipeline.Add(new MessageProcessorPipe<T>());

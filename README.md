@@ -140,6 +140,10 @@ This pipe will execute the function `PipeContextAction.Action`
 
 ![Consumer Pipeline](./doc/images/consumer-pipeline.png)
 
+#### Canceller pipe
+
+This pipe is use internally for `IActiveConsumer.CancelAsync()` and `IActiveConsumer.CancelAfterCurrentTaskCompletedAsync()`
+
 #### Message Ack Pipe
 
 This pipe is responsible to acknowledge successfully processed messages, and handle failure (reject or retry logic).

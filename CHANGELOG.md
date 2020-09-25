@@ -1,3 +1,7 @@
+1.7.1
+
+- Rework Consumer pipeline. Since deserialization can fail, it has been move after the _Log Exception Pipe_ and after the _Message Ack Pipe_, so it does not "lock" the consumer when deserializer fail.
+
 1.7
 
 - Follow [RabbitMQ recommendations](https://www.cloudamqp.com/blog/2018-01-19-part4-rabbitmq-13-common-errors.html) about connections 
