@@ -15,6 +15,7 @@ namespace Socolin.RabbitMQ.Client.Example
 			const string queueName = "some-queue-name";
 			var options = new RabbitMqServiceOptionsBuilder()
 				.WithRetry(TimeSpan.FromSeconds(15), null, TimeSpan.FromSeconds(1))
+				.WithDeliveryMode(DeliveryMode.Persistent)
 				.WithConnectionManager(rabbitMqConnectionManager)
 				.WithDefaultSerializer(message => Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(message)), "application/json")
 				.Build();

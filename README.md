@@ -13,6 +13,7 @@ var rabbitMqConnectionManager = new RabbitMqConnectionManager(new Uri("amqp://lo
 const string queueName = "some-queue-name";
 var options = new RabbitMqServiceOptionsBuilder()
     .WithRetry(TimeSpan.FromSeconds(15), null, TimeSpan.FromSeconds(1))
+    .WithDeliveryMode(DeliveryMode.Persistent)
     .WithConnectionManager(rabbitMqConnectionManager)
     .WithSerializer(message => Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(message)), "application/json")
     .Build();
@@ -22,7 +23,7 @@ var serviceClient = new RabbitMqServiceClient(options);
 await serviceClient.CreateQueueAsync(queueName + "-Error", true);
 
 // Create a queue with options builder
-var createQueueOption = new CreateQueueOptionBuilder(QueueType.Classic)
+var createQueueOption = new CreateQueueOptionsBuilder(QueueType.Classic)
     .Durable()
     .WithDeadLetterExchange(RabbitMqConstants.DefaultExchangeName)
     .WithDeadLetterRoutingKey(queueName + "-Error")
@@ -33,6 +34,12 @@ await serviceClient.CreateQueueAsync(queueName, createQueueOption);
 var consumerOptions = new ConsumerOptionsBuilder<string>()
     .WithDefaultDeSerializer(message => JsonConvert.DeserializeObject<string>(Encoding.UTF8.GetString(message.Span)))
     .WithSimpleMessageAck()
+    .WithCustomPipe(async (context, next) =>
+    {
+        Console.WriteLine("Some logging message before processing");
+        await next();
+        Console.WriteLine("Some logging message after processing");
+    })
     .Build();
 var activeConsumer = await serviceClient.StartListeningQueueAsync(queueName, consumerOptions, (message, items, ct) =>
 {
