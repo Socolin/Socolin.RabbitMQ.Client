@@ -9,6 +9,7 @@ namespace Socolin.RabbitMQ.Client.Pipes.Client.Context
 		public object Message { get; set; }
 		public string? RoutingKey { get; set; }
 		public string ExchangeName { get; set; } = RabbitMqConstants.DefaultExchangeName;
+		public bool Mandatory { get; set; } = true;
 		public IBasicProperties? BasicProperties { get; set; }
 		public ReadOnlyMemory<byte> SerializedMessage { get; set; }
 		public Dictionary<string, object> Items { get; }

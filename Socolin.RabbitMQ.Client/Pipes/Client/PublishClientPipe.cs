@@ -23,7 +23,7 @@ namespace Socolin.RabbitMQ.Client.Pipes.Client
 			clientPipeContextMessage.Channel!.BasicPublish(
 				clientPipeContextMessage.ExchangeName,
 				clientPipeContextMessage.RoutingKey,
-				mandatory: true,
+				clientPipeContextMessage.Mandatory,
 				clientPipeContextMessage.BasicProperties,
 				clientPipeContextMessage.SerializedMessage
 			);
