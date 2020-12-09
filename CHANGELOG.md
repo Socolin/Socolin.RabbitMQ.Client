@@ -1,3 +1,8 @@
+1.7.3
+
+- Add option to allow to override `mandatory` flag when publishing a message
+- Add option to configure connection heartbeat (disabled by default)
+
 1.7.2
 
 - Add new consumer option to choose consumer prefetch count
