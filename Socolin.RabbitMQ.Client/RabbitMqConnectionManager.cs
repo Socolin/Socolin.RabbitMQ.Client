@@ -22,9 +22,14 @@ namespace Socolin.RabbitMQ.Client
 		private readonly IRabbitMqChannelManager _consumerChannelManager;
 
 		public RabbitMqConnectionManager(Uri uri, string connectionName, TimeSpan connectionTimeout)
+			: this(uri, connectionName, connectionTimeout, TimeSpan.Zero)
 		{
-			_publishChannelManager = new RabbitMqChannelManager(uri, connectionName, connectionTimeout, ChannelType.Publish);
-			_consumerChannelManager = new RabbitMqChannelManager(uri, connectionName, connectionTimeout, ChannelType.Consumer);
+		}
+
+		public RabbitMqConnectionManager(Uri uri, string connectionName, TimeSpan connectionTimeout, TimeSpan requestedHeart)
+		{
+			_publishChannelManager = new RabbitMqChannelManager(uri, connectionName, connectionTimeout, ChannelType.Publish, requestedHeart);
+			_consumerChannelManager = new RabbitMqChannelManager(uri, connectionName, connectionTimeout, ChannelType.Consumer, requestedHeart);
 		}
 
 		public void Dispose()

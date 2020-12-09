@@ -19,6 +19,7 @@ namespace Socolin.RabbitMQ.Client
 		private readonly string _connectionName;
 		private readonly TimeSpan _connectionTimeout;
 		private readonly ChannelType _channelType;
+		private readonly TimeSpan _requestedHeartbeat;
 
 		private readonly SemaphoreSlim _connectionLock = new SemaphoreSlim(1);
 		private IConnection? _connection;
@@ -27,12 +28,29 @@ namespace Socolin.RabbitMQ.Client
 		private readonly object _lockUsedChannelCount = new object();
 		private int _usedChannelCount;
 
-		public RabbitMqChannelManager(Uri uri, string connectionName, TimeSpan connectionTimeout, ChannelType channelType)
+		public RabbitMqChannelManager(
+			Uri uri,
+			string connectionName,
+			TimeSpan connectionTimeout,
+			ChannelType channelType
+		)
+			: this(uri, connectionName, connectionTimeout, channelType, TimeSpan.Zero)
+		{
+		}
+
+		public RabbitMqChannelManager(
+			Uri uri,
+			string connectionName,
+			TimeSpan connectionTimeout,
+			ChannelType channelType,
+			TimeSpan requestedHeartbeat
+		)
 		{
 			_uri = uri;
 			_connectionName = connectionName;
 			_connectionTimeout = connectionTimeout;
 			_channelType = channelType;
+			_requestedHeartbeat = requestedHeartbeat;
 		}
 
 		public async Task<ChannelContainer> AcquireChannel()
@@ -51,7 +69,8 @@ namespace Socolin.RabbitMQ.Client
 				{
 					Uri = _uri,
 					AutomaticRecoveryEnabled = true,
-					DispatchConsumersAsync = true
+					DispatchConsumersAsync = true,
+					RequestedHeartbeat = _requestedHeartbeat
 				};
 
 				_connection = connectionFactory.CreateConnection(_connectionName + ":" + _channelType);
