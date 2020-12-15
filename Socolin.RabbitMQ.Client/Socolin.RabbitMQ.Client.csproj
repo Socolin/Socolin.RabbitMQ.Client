@@ -11,6 +11,7 @@
 		<RepositoryType>git</RepositoryType>
 		<Copyright>2020</Copyright>
 		<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+		<DebugType>full</DebugType>
 	</PropertyGroup>
 
 	<ItemGroup>
