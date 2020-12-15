@@ -1,3 +1,7 @@
+1.7.4
+
+- Enable [sourcelink](https://github.com/dotnet/sourcelink)
+
 1.7.3
 
 - Add option to allow to override `mandatory` flag when publishing a message
