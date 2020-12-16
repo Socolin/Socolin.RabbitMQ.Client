@@ -4,14 +4,13 @@
 		<TargetFramework>netstandard2.0</TargetFramework>
 		<LangVersion>latest</LangVersion>
 		<Nullable>enable</Nullable>
-		<Version>1.7.4</Version>
+		<Version>1.7.5</Version>
 		<Description>A simple wrapper around RabbitMQ.Client to make it easier to use.</Description>
 		<Authors>Bertrand Provost</Authors>
 		<RepositoryUrl>https://github.com/Socolin/Socolin.RabbitMQ.Client</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<Copyright>2020</Copyright>
 		<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
-		<DebugType>full</DebugType>
 	</PropertyGroup>
 
 	<ItemGroup>
