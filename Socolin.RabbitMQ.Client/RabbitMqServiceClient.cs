@@ -26,6 +26,7 @@ namespace Socolin.RabbitMQ.Client
 		Task<IActiveConsumer> StartListeningQueueAsync<T>(string queueName, ConsumerOptions<T> consumerOptions, ProcessorMessageDelegate<T> messageProcessor) where T : class;
 		RabbitMqEnqueueQueueClient CreateQueueClient(string queueName);
 		RabbitMqEnqueueQueueClient CreateQueueClient(string exchangeName, string routingKey);
+		Task<long> GetMessageCountInQueueAsync(string queueName);
 	}
 
 	public class RabbitMqServiceClient : IRabbitMqServiceClient
