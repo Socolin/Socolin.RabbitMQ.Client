@@ -1,3 +1,15 @@
+1.7.7
+
+- Expose `GetMessageCountInQueueAsync` API
+
+1.7.6
+
+- Test about sourcelink
+
+1.7.5
+
+- Test about sourcelink
+
 1.7.4
 
 - Enable [sourcelink](https://github.com/dotnet/sourcelink)
