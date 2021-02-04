@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using JetBrains.Annotations;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using RabbitMQ.Client.Exceptions;
@@ -13,6 +14,7 @@ using Socolin.RabbitMQ.Client.Pipes.Consumer.Context;
 
 namespace Socolin.RabbitMQ.Client
 {
+	[PublicAPI]
 	public interface IRabbitMqServiceClient
 	{
 		Task CreateQueueAsync(string queueName, CreateQueueOptions options);

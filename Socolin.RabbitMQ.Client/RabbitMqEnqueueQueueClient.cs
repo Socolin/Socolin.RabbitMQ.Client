@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using JetBrains.Annotations;
 using Socolin.RabbitMQ.Client.Pipes.Client;
 using Socolin.RabbitMQ.Client.Pipes.Client.Context;
 
 namespace Socolin.RabbitMQ.Client
 {
+	[PublicAPI]
 	public interface IRabbitMqEnqueueQueueClient
 	{
 		Task EnqueueMessageAsync(object message, Dictionary<string, object>? contextItems = null);

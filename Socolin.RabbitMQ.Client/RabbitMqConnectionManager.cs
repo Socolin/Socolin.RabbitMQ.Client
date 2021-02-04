@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using JetBrains.Annotations;
 using RabbitMQ.Client;
 
 namespace Socolin.RabbitMQ.Client
@@ -10,6 +11,7 @@ namespace Socolin.RabbitMQ.Client
 		Consumer
 	}
 
+	[PublicAPI]
 	public interface IRabbitMqConnectionManager : IDisposable
 	{
 		Task<ChannelContainer> AcquireChannel(ChannelType channelType);
