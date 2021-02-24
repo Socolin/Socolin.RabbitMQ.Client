@@ -21,13 +21,13 @@
 
 	<ItemGroup>
 		<None Remove="LICENSES.md" />
-		<Content Include="..\CHANGELOG.md">
+		<None Include="..\CHANGELOG.md">
 			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
 			<CopyToPublishDirectory>Never</CopyToPublishDirectory>
 			<Link>CHANGELOG.md</Link>
-		</Content>
-		<Content Include="LICENSE.md" PackagePath=".">
+		</None>
+		<None Include="LICENSE.md" PackagePath=".">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
-		</Content>
+		</None>
 	</ItemGroup>
 </Project>
