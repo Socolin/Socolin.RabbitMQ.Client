@@ -1,3 +1,7 @@
+1.7.8
+
+- Fix potential connection leak
+
 1.7.7
 
 - Expose `GetMessageCountInQueueAsync` API

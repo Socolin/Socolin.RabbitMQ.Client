@@ -4,7 +4,7 @@
 		<TargetFramework>netstandard2.0</TargetFramework>
 		<LangVersion>latest</LangVersion>
 		<Nullable>enable</Nullable>
-		<Version>1.7.7</Version>
+		<Version>1.7.8</Version>
 		<Description>A simple wrapper around RabbitMQ.Client to make it easier to use.</Description>
 		<Authors>Bertrand Provost</Authors>
 		<RepositoryUrl>https://github.com/Socolin/Socolin.RabbitMQ.Client</RepositoryUrl>
@@ -26,7 +26,7 @@
 			<CopyToPublishDirectory>Never</CopyToPublishDirectory>
 			<Link>CHANGELOG.md</Link>
 		</None>
-		<None Include="LICENSE.md" PackagePath=".">
+		<None Include="LICENSE.md" PackagePath="." Pack="true">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
 	</ItemGroup>
