@@ -66,6 +66,8 @@ namespace Socolin.RabbitMQ.Client
 			{
 				if (_connection?.IsOpen == false)
 					ClearConnection();
+				else  if (_connection?.IsOpen == true)
+					return GetOrCreateChannel();
 
 				var connectionFactory = new ConnectionFactory
 				{
