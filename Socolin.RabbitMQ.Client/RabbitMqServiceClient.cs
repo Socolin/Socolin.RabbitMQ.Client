@@ -29,6 +29,7 @@ namespace Socolin.RabbitMQ.Client
 		RabbitMqEnqueueQueueClient CreateQueueClient(string queueName);
 		RabbitMqEnqueueQueueClient CreateQueueClient(string exchangeName, string routingKey);
 		Task<long> GetMessageCountInQueueAsync(string queueName);
+		Task<RabbitMqQueueInfo> GetQueueInfoInQueueAsync(string queueName);
 	}
 
 	public class RabbitMqServiceClient : IRabbitMqServiceClient
@@ -90,6 +91,35 @@ namespace Socolin.RabbitMQ.Client
 			return pipeContextAction.GetItemValue<long>(messageCountKey);
 		}
 
+		public async Task<RabbitMqQueueInfo> GetQueueInfoInQueueAsync(string queueName)
+		{
+			const string messageCountKey = "messageCount";
+			const string consumerCountKey = "consumerCount";
+			var pipeContextAction = new ClientPipeContextAction((channel, context) =>
+			{
+				try
+				{
+					var queueInfo = channel.QueueDeclarePassive(queueName);
+					context.Items[messageCountKey] = (long)queueInfo.MessageCount;
+					context.Items[consumerCountKey] = (int)queueInfo.ConsumerCount;
+				}
+				catch (OperationInterruptedException ex) when (ex.ShutdownReason.ReplyCode == 404)
+				{
+					context.Items[messageCountKey] = -1L;
+					context.Items[consumerCountKey] = -1;
+				}
+
+				return Task.CompletedTask;
+			});
+			await ClientPipe.ExecutePipelineAsync(pipeContextAction, _actionPipeline.Value);
+
+			return new RabbitMqQueueInfo
+			{
+				MessageCount = pipeContextAction.GetItemValue<long>(messageCountKey),
+				ConsumerCount = pipeContextAction.GetItemValue<int>(consumerCountKey)
+			};
+		}
+		
 		public async Task DeleteQueueAsync(string queueName, bool ifUnused, bool ifEmpty)
 		{
 			await ClientPipe.ExecutePipelineAsync(new ClientPipeContextAction((channel, _) =>
