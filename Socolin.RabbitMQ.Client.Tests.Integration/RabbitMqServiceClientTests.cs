@@ -122,12 +122,41 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 		}
 
 		[Test]
+		public async Task CanGetQueueInfoInQueueAsync()
+		{
+			using var channelContainer = await _rabbitMqConnectionManager.AcquireChannel(ChannelType.Publish);
+			channelContainer.Channel.QueueDeclare(_queueName, true, false, false, null);
+			channelContainer.Channel.BasicPublish(RabbitMqConstants.DefaultExchangeName, _queueName, true, null, new byte[] {0x42});
+			channelContainer.Channel.BasicPublish(RabbitMqConstants.DefaultExchangeName, _queueName, true, null, new byte[] {0x42});
+
+			var count = await _serviceClient.GetQueueInfoInQueueAsync(_queueName);
+
+			count.Should().Be(new RabbitMqQueueInfo
+			{
+				MessageCount = 2,
+				ConsumerCount = 0
+			});
+		}
+		
+		[Test]
 		public async Task CanGetMessageCount_OnNonExistentQueue()
 		{
 			var count = await _serviceClient.GetMessageCountInQueueAsync(_queueName);
 			count.Should().Be(-1);
 		}
 
+		[Test]
+		public async Task CanGetQueueInfoInQueueAsync_OnNonExistentQueue()
+		{
+			var count = await _serviceClient.GetQueueInfoInQueueAsync(_queueName);
+			count.Should().Be(new RabbitMqQueueInfo
+			{
+				MessageCount = -1,
+				ConsumerCount = -1
+			});
+		}
+
+		
 		[Test]
 		[Explicit]
 		public async Task ClientSurviveRestart()
