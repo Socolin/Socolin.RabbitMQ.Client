@@ -1,4 +1,8 @@
-1.7.8
+1.7.9
+
+- Add method to get the number of consumers
+
+- 1.7.8
 
 - Fix potential connection leak
 
