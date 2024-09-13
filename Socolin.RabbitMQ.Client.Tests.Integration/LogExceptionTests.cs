@@ -76,12 +76,12 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 			await semaphore.WaitAsync();
 			await Task.Delay(TimeSpan.FromSeconds(1));
 
-			receivedExceptions.Should().BeEquivalentTo(
+			receivedExceptions.Should().BeEquivalentTo([
 				(thrownException, false),
 				(thrownException, false),
 				(thrownException, false),
-				(thrownException, true)
-			);
+				(thrownException, true),
+			]);
 		}
 	}
 }
