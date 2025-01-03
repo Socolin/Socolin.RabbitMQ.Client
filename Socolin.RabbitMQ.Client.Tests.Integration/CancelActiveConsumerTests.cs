@@ -18,9 +18,9 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 		private RabbitMqConnectionManager _rabbitMqConnectionManager;
 
 		[SetUp]
-		public void Setup()
+		public async Task Setup()
 		{
-			_rabbitMqConnectionManager = new RabbitMqConnectionManager(InitRabbitMqDocker.RabbitMqUri, nameof(RabbitMqServiceClientTests), TimeSpan.FromSeconds(20));
+			_rabbitMqConnectionManager = new RabbitMqConnectionManager(InitRabbitMqDocker.RabbitMqUri, nameof(RabbitMqServiceClientTests), TimeSpan.FromSeconds(20), TimeSpan.FromSeconds(60));
 
 			var options = new RabbitMqServiceOptionsBuilder()
 				.WithRetry(TimeSpan.FromSeconds(15), null, TimeSpan.FromSeconds(1))
@@ -29,7 +29,7 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 				.Build();
 			_serviceClient = new RabbitMqServiceClient(options);
 			_queueName = BaseQueueName + Guid.NewGuid();
-			_serviceClient.CreateQueueAsync(_queueName);
+			await _serviceClient.CreateQueueAsync(_queueName);
 		}
 
 		[TearDown]
@@ -39,8 +39,8 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 			{
 				try
 				{
-					using var channelContainer = await _rabbitMqConnectionManager.AcquireChannel(ChannelType.Publish);
-					channelContainer.Channel.QueueDelete(_queueName, false, false);
+					using var channelContainer = await _rabbitMqConnectionManager.AcquireChannelAsync(ChannelType.Publish);
+					await channelContainer.Channel.QueueDeleteAsync(_queueName, false, false);
 				}
 				catch (Exception)
 				{
@@ -61,7 +61,7 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 
 			var completed = false;
 			var messageCount = 0;
-			var activeConsumer = await _serviceClient.StartListeningQueueAsync(_queueName, consumerOptions, async (message, _, ct) =>
+			var activeConsumer = await _serviceClient.StartListeningQueueAsync(_queueName, consumerOptions, async (_, _, ct) =>
 			{
 				messageCount++;
 				await Task.Delay(TimeSpan.FromSeconds(1), ct);
@@ -89,7 +89,7 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 
 			var completed = false;
 			var messageCount = 0;
-			var activeConsumer = await _serviceClient.StartListeningQueueAsync(_queueName, consumerOptions, async (message, _, ct) =>
+			var activeConsumer = await _serviceClient.StartListeningQueueAsync(_queueName, consumerOptions, async (_, _, ct) =>
 			{
 				messageCount++;
 				await Task.Delay(TimeSpan.FromSeconds(1), ct);

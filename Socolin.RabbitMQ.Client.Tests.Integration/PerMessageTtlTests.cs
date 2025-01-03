@@ -20,7 +20,7 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 		[SetUp]
 		public void Setup()
 		{
-			_rabbitMqConnectionManager = new RabbitMqConnectionManager(InitRabbitMqDocker.RabbitMqUri, nameof(RabbitMqServiceClientTests), TimeSpan.FromSeconds(20));
+			_rabbitMqConnectionManager = new RabbitMqConnectionManager(InitRabbitMqDocker.RabbitMqUri, nameof(RabbitMqServiceClientTests), TimeSpan.FromSeconds(20), TimeSpan.FromSeconds(60));
 			_queueName = BaseQueueName + Guid.NewGuid();
 		}
 
@@ -31,8 +31,8 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 			{
 				try
 				{
-					using var channelContainer = await _rabbitMqConnectionManager.AcquireChannel(ChannelType.Publish);
-					channelContainer.Channel.QueueDelete(_queueName, false, false);
+					using var channelContainer = await _rabbitMqConnectionManager.AcquireChannelAsync(ChannelType.Publish);
+					await channelContainer.Channel.QueueDeleteAsync(_queueName, false, false);
 				}
 				catch (Exception)
 				{

@@ -1,33 +1,31 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
-using Socolin.RabbitMQ.Client.Options.Client;
+using RabbitMQ.Client;
 using Socolin.RabbitMQ.Client.Pipes.Client.Context;
 
 // ReSharper disable ArgumentsStyleLiteral
 
 namespace Socolin.RabbitMQ.Client.Pipes.Client
 {
-	public class PublishClientPipe : ClientPipe, IMessageClientPipe
+	public class PublishClientPipe(DeliveryModes? deliveryMode) : ClientPipe, IMessageClientPipe
 	{
-		private readonly DeliveryMode? _deliveryMode;
-
-		public PublishClientPipe(DeliveryMode? deliveryMode)
+		public async Task ProcessAsync(
+			ClientPipeContextMessage clientPipeContextMessage,
+			ReadOnlyMemory<IClientPipe> pipeline,
+			CancellationToken cancellation = default
+		)
 		{
-			_deliveryMode = deliveryMode;
-		}
-
-		public Task ProcessAsync(ClientPipeContextMessage clientPipeContextMessage, ReadOnlyMemory<IClientPipe> pipeline)
-		{
-			if (_deliveryMode.HasValue)
-				clientPipeContextMessage.BasicProperties!.DeliveryMode = (byte) _deliveryMode.Value;
-			clientPipeContextMessage.Channel!.BasicPublish(
+			if (deliveryMode.HasValue)
+				clientPipeContextMessage.BasicProperties.DeliveryMode = deliveryMode.Value;
+			await clientPipeContextMessage.Channel!.BasicPublishAsync(
 				clientPipeContextMessage.ExchangeName,
 				clientPipeContextMessage.RoutingKey,
 				clientPipeContextMessage.Mandatory,
 				clientPipeContextMessage.BasicProperties,
-				clientPipeContextMessage.SerializedMessage
+				clientPipeContextMessage.SerializedMessage,
+				cancellation
 			);
-			return Task.CompletedTask;
 		}
 	}
 }

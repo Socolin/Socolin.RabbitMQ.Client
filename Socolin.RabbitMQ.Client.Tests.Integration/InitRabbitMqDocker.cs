@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading.Tasks;
 using NUnit.Framework;
 using RabbitMQ.Client;
 
@@ -15,7 +16,7 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 		public static Uri RabbitMqUri { get; private set; }
 
 		[OneTimeSetUp]
-		public void Setup()
+		public async Task Setup()
 		{
 			RabbitMqDockerHelper.StopDocker(DockerInstanceName);
 			RabbitMqDockerHelper.RmDocker(DockerInstanceName);
@@ -23,7 +24,7 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 			RabbitMqPort = GetFreePort();
 			RabbitMqUri = new Uri($"amqp://localhost:{RabbitMqPort}");
 			RabbitMqDockerHelper.CreateDocker(DockerInstanceName, RabbitMqPort);
-			WaitRabbitMqToBeReady();
+			await WaitRabbitMqToBeReadyAsync();
 		}
 
 		[OneTimeTearDown]
@@ -48,7 +49,7 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 			return port;
 		}
 
-		private static void WaitRabbitMqToBeReady()
+		private static async Task WaitRabbitMqToBeReadyAsync()
 		{
 			var sw = Stopwatch.StartNew();
 			while (true)
@@ -57,7 +58,7 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 					throw new Exception("Rabbitmq docker did not started in 30 seconds");
 				try
 				{
-					using var connection = new ConnectionFactory {Uri = RabbitMqUri}.CreateConnection("WarmupIntegrationTest");
+					await using var connection = await new ConnectionFactory {Uri = RabbitMqUri}.CreateConnectionAsync("WarmupIntegrationTest");
 					break;
 				}
 				catch (Exception)

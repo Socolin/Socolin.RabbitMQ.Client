@@ -4,29 +4,21 @@ using RabbitMQ.Client.Events;
 
 namespace Socolin.RabbitMQ.Client.Pipes.Consumer.Context
 {
-	public class ConsumerPipeContext<T> : IConsumerPipeContext<T> where T : class
+	public class ConsumerPipeContext<T>(
+		IRabbitMqConnectionManager connectionManager,
+		IChannel chanel,
+		BasicDeliverEventArgs basicDeliverEventArgs,
+		ProcessorMessageDelegate<T> messageProcessor,
+		IActiveMessageProcessorCanceller activeMessageProcessorCanceller
+	) : IConsumerPipeContext<T>
+		where T : class
 	{
-		public IRabbitMqConnectionManager ConnectionManager { get; }
-		public IModel Chanel { get; }
+		public IRabbitMqConnectionManager ConnectionManager { get; } = connectionManager;
+		public IChannel Chanel { get; } = chanel;
 		public T? DeserializedMessage { get; set; }
-		public BasicDeliverEventArgs RabbitMqMessage { get; }
-		public ProcessorMessageDelegate<T> MessageProcessor { get; }
-		public IActiveMessageProcessorCanceller ActiveMessageProcessorCanceller { get; }
-		public Dictionary<string, object> Items { get; } = new Dictionary<string, object>();
-
-		public ConsumerPipeContext(
-			IRabbitMqConnectionManager connectionManager,
-			IModel chanel,
-			BasicDeliverEventArgs basicDeliverEventArgs,
-			ProcessorMessageDelegate<T> messageProcessor,
-			IActiveMessageProcessorCanceller activeMessageProcessorCanceller
-		)
-		{
-			ConnectionManager = connectionManager;
-			RabbitMqMessage = basicDeliverEventArgs;
-			MessageProcessor = messageProcessor;
-			ActiveMessageProcessorCanceller = activeMessageProcessorCanceller;
-			Chanel = chanel;
-		}
+		public BasicDeliverEventArgs RabbitMqMessage { get; } = basicDeliverEventArgs;
+		public ProcessorMessageDelegate<T> MessageProcessor { get; } = messageProcessor;
+		public IActiveMessageProcessorCanceller ActiveMessageProcessorCanceller { get; } = activeMessageProcessorCanceller;
+		public Dictionary<string, object> Items { get; } = new();
 	}
 }

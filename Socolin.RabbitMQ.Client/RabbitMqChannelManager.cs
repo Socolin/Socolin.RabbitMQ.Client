@@ -10,24 +10,24 @@ namespace Socolin.RabbitMQ.Client
 	[PublicAPI]
 	public interface IRabbitMqChannelManager : IDisposable
 	{
-		Task<ChannelContainer> AcquireChannel();
-		void ReleaseChannel(IModel channel);
+		Task<ChannelContainer> AcquireChannelAsync();
+		void ReleaseChannel(IChannel channel);
 	}
 
-	public class RabbitMqChannelManager : IRabbitMqChannelManager
+	public class RabbitMqChannelManager(
+		Uri uri,
+		string connectionName,
+		TimeSpan connectionTimeout,
+		ChannelType channelType,
+		TimeSpan requestedHeartbeat
+	) : IRabbitMqChannelManager
 	{
 		private const int MaxChannelPool = 90;
-		private readonly Uri _uri;
-		private readonly string _connectionName;
-		private readonly TimeSpan _connectionTimeout;
-		private readonly ChannelType _channelType;
-		private readonly TimeSpan _requestedHeartbeat;
 
-		private readonly SemaphoreSlim _connectionLock = new SemaphoreSlim(1);
+		private readonly SemaphoreSlim _connectionLock = new(1);
 		private IConnection? _connection;
 
-		private readonly ConcurrentBag<IModel> _availableChannelPool = new ConcurrentBag<IModel>();
-		private readonly object _lockUsedChannelCount = new object();
+		private readonly ConcurrentBag<IChannel> _availableChannelPool = new();
 		private int _usedChannelCount;
 
 		public RabbitMqChannelManager(
@@ -36,49 +36,33 @@ namespace Socolin.RabbitMQ.Client
 			TimeSpan connectionTimeout,
 			ChannelType channelType
 		)
-			: this(uri, connectionName, connectionTimeout, channelType, TimeSpan.Zero)
+			: this(uri, connectionName, connectionTimeout, channelType, ConnectionFactory.DefaultHeartbeat)
 		{
 		}
 
-		public RabbitMqChannelManager(
-			Uri uri,
-			string connectionName,
-			TimeSpan connectionTimeout,
-			ChannelType channelType,
-			TimeSpan requestedHeartbeat
-		)
-		{
-			_uri = uri;
-			_connectionName = connectionName;
-			_connectionTimeout = connectionTimeout;
-			_channelType = channelType;
-			_requestedHeartbeat = requestedHeartbeat;
-		}
-
-		public async Task<ChannelContainer> AcquireChannel()
+		public async Task<ChannelContainer> AcquireChannelAsync()
 		{
 			if (_connection != null)
-				return GetOrCreateChannel();
+				return await GetOrCreateChannelAsync();
 
-			await _connectionLock.WaitAsync(_connectionTimeout);
+			await _connectionLock.WaitAsync(connectionTimeout);
 
 			try
 			{
 				if (_connection?.IsOpen == false)
 					ClearConnection();
-				else  if (_connection?.IsOpen == true)
-					return GetOrCreateChannel();
+				else if (_connection?.IsOpen == true)
+					return await GetOrCreateChannelAsync();
 
 				var connectionFactory = new ConnectionFactory
 				{
-					Uri = _uri,
+					Uri = uri,
 					AutomaticRecoveryEnabled = true,
-					DispatchConsumersAsync = true,
-					RequestedHeartbeat = _requestedHeartbeat
+					RequestedHeartbeat = requestedHeartbeat,
 				};
 
-				_connection = connectionFactory.CreateConnection(_connectionName + ":" + _channelType);
-				return GetOrCreateChannel();
+				_connection = await connectionFactory.CreateConnectionAsync(connectionName + ":" + channelType);
+				return await GetOrCreateChannelAsync();
 			}
 			finally
 			{
@@ -86,7 +70,7 @@ namespace Socolin.RabbitMQ.Client
 			}
 		}
 
-		private ChannelContainer GetOrCreateChannel()
+		private async Task<ChannelContainer> GetOrCreateChannelAsync()
 		{
 			while (!_availableChannelPool.IsEmpty)
 			{
@@ -94,8 +78,7 @@ namespace Socolin.RabbitMQ.Client
 				{
 					if (poolChannel.IsOpen)
 					{
-						lock (_lockUsedChannelCount)
-							_usedChannelCount++;
+						Interlocked.Increment(ref _usedChannelCount);
 						return new ChannelContainer(this, poolChannel);
 					}
 				}
@@ -104,20 +87,18 @@ namespace Socolin.RabbitMQ.Client
 			if (_usedChannelCount > MaxChannelPool)
 				throw new Exception("Too many channel allocated");
 
-			var channel = _connection!.CreateModel();
+			var channel = await _connection!.CreateChannelAsync();
 
-			lock (_lockUsedChannelCount)
-				_usedChannelCount++;
+			Interlocked.Increment(ref _usedChannelCount);
 
 			return new ChannelContainer(this, channel);
 		}
 
-		public void ReleaseChannel(IModel channel)
+		public void ReleaseChannel(IChannel channel)
 		{
 			if (channel.IsClosed)
 				return;
-			lock (_lockUsedChannelCount)
-				_usedChannelCount--;
+			Interlocked.Increment(ref _usedChannelCount);
 			_availableChannelPool.Add(channel);
 		}
 

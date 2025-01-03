@@ -7,10 +7,10 @@ namespace Socolin.RabbitMQ.Client.Pipes.Client.Context
 	public class ClientPipeContextMessage : IClientPipeContext
 	{
 		public object Message { get; set; }
-		public string? RoutingKey { get; set; }
+		public string RoutingKey { get; set; } = string.Empty;
 		public string ExchangeName { get; set; } = RabbitMqConstants.DefaultExchangeName;
 		public bool Mandatory { get; set; } = true;
-		public IBasicProperties? BasicProperties { get; set; }
+		public BasicProperties BasicProperties { get; set; } = new();
 		public ReadOnlyMemory<byte> SerializedMessage { get; set; }
 		public Dictionary<string, object> Items { get; }
 
@@ -21,6 +21,6 @@ namespace Socolin.RabbitMQ.Client.Pipes.Client.Context
 		}
 
 		public ChannelContainer? ChannelContainer { get; set; }
-		public IModel? Channel => ChannelContainer?.Channel;
+		public IChannel? Channel => ChannelContainer?.Channel;
 	}
 }

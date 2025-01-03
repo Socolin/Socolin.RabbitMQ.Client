@@ -18,9 +18,8 @@ namespace Socolin.RabbitMQ.Client.Options.Client
 		RejectPublishDlx,
 	}
 
-	public class CreateQueueOptionsBuilder
+	public class CreateQueueOptionsBuilder(QueueType queueType)
 	{
-		private readonly QueueType _queueType;
 		private bool _durable;
 		private bool _autoDelete;
 		private bool _exclusive;
@@ -35,11 +34,6 @@ namespace Socolin.RabbitMQ.Client.Options.Client
 		private byte? _maxPriorityLevel;
 		private bool? _lazyMode;
 		private string? _masterLocator;
-
-		public CreateQueueOptionsBuilder(QueueType queueType)
-		{
-			_queueType = queueType;
-		}
 
 		/// <summary>
 		/// Define the queue to be Durable
@@ -141,7 +135,7 @@ namespace Socolin.RabbitMQ.Client.Options.Client
 		/// <returns></returns>
 		public CreateQueueOptionsBuilder WithOverflowBehaviour(OverflowBehaviour overflowBehaviour)
 		{
-			if (_queueType == QueueType.Quorum && overflowBehaviour != OverflowBehaviour.DropHead)
+			if (queueType == QueueType.Quorum && overflowBehaviour != OverflowBehaviour.DropHead)
 				throw new InvalidBuilderOptionsException("The quorum queue type only supports drop-head.");
 			_overflowBehaviour = overflowBehaviour;
 			return this;
@@ -215,7 +209,7 @@ namespace Socolin.RabbitMQ.Client.Options.Client
 
 		public CreateQueueOptions Build()
 		{
-			IDictionary<string, object> arguments = new Dictionary<string, object>();
+			IDictionary<string, object?> arguments = new Dictionary<string, object?>();
 			if (_queueExpiresMilliseconds != null)
 				arguments[Headers.XExpires] = _queueExpiresMilliseconds;
 			if (_messageTtlMilliseconds != null)
@@ -245,6 +239,8 @@ namespace Socolin.RabbitMQ.Client.Options.Client
 				arguments[Headers.XMaxPriority] = _maxPriorityLevel;
 			if (_lazyMode != null)
 				arguments[Headers.XQueueMode] = _lazyMode.Value ? "lazy" : "default";
+			if (queueType == QueueType.Quorum)
+				arguments[Headers.XQueueType] = "quorum";
 			if (_masterLocator != null)
 				arguments["x-queue-master-locator"] = _masterLocator;
 

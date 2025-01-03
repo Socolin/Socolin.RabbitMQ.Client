@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using RabbitMQ.Client;
 using Socolin.RabbitMQ.Client.Exceptions;
 using Socolin.RabbitMQ.Client.Pipes.Client.Builders;
 
@@ -23,7 +24,7 @@ namespace Socolin.RabbitMQ.Client.Options.Client
 		private bool _usePerMessageTtl;
 		private int? _perMessageTTl;
 		private TimeSpan[]? _delaysBetweenRetry;
-		private DeliveryMode? _deliveryMode;
+		private DeliveryModes? _deliveryMode;
 
 		public RabbitMqServiceOptionsBuilder WithConnectionManager(IRabbitMqConnectionManager connectionManager)
 		{
@@ -112,7 +113,7 @@ namespace Socolin.RabbitMQ.Client.Options.Client
 			return this;
 		}
 
-		public RabbitMqServiceOptionsBuilder WithDeliveryMode(DeliveryMode deliveryMode)
+		public RabbitMqServiceOptionsBuilder WithDeliveryMode(DeliveryModes deliveryMode)
 		{
 			_deliveryMode = deliveryMode;
 			return this;

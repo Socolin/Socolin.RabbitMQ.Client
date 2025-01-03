@@ -14,24 +14,19 @@ namespace Socolin.RabbitMQ.Client
 	[PublicAPI]
 	public interface IRabbitMqConnectionManager : IDisposable
 	{
-		Task<ChannelContainer> AcquireChannel(ChannelType channelType);
-		void ReleaseChannel(ChannelType channelType, IModel channel);
+		Task<ChannelContainer> AcquireChannelAsync(ChannelType channelType);
+		void ReleaseChannel(ChannelType channelType, IChannel channel);
 	}
 
-	public class RabbitMqConnectionManager : IRabbitMqConnectionManager
+	public class RabbitMqConnectionManager(Uri uri, string connectionName, TimeSpan connectionTimeout, TimeSpan requestedHeart)
+		: IRabbitMqConnectionManager
 	{
-		private readonly IRabbitMqChannelManager _publishChannelManager;
-		private readonly IRabbitMqChannelManager _consumerChannelManager;
+		private readonly IRabbitMqChannelManager _publishChannelManager = new RabbitMqChannelManager(uri, connectionName, connectionTimeout, ChannelType.Publish, requestedHeart);
+		private readonly IRabbitMqChannelManager _consumerChannelManager = new RabbitMqChannelManager(uri, connectionName, connectionTimeout, ChannelType.Consumer, requestedHeart);
 
 		public RabbitMqConnectionManager(Uri uri, string connectionName, TimeSpan connectionTimeout)
-			: this(uri, connectionName, connectionTimeout, TimeSpan.Zero)
+			: this(uri, connectionName, connectionTimeout, System.Threading.Timeout.InfiniteTimeSpan)
 		{
-		}
-
-		public RabbitMqConnectionManager(Uri uri, string connectionName, TimeSpan connectionTimeout, TimeSpan requestedHeart)
-		{
-			_publishChannelManager = new RabbitMqChannelManager(uri, connectionName, connectionTimeout, ChannelType.Publish, requestedHeart);
-			_consumerChannelManager = new RabbitMqChannelManager(uri, connectionName, connectionTimeout, ChannelType.Consumer, requestedHeart);
 		}
 
 		public void Dispose()
@@ -40,20 +35,20 @@ namespace Socolin.RabbitMQ.Client
 			_consumerChannelManager.Dispose();
 		}
 
-		public Task<ChannelContainer> AcquireChannel(ChannelType channelType)
+		public Task<ChannelContainer> AcquireChannelAsync(ChannelType channelType)
 		{
 			switch (channelType)
 			{
 				case ChannelType.Publish:
-					return _publishChannelManager.AcquireChannel();
+					return _publishChannelManager.AcquireChannelAsync();
 				case ChannelType.Consumer:
-					return _consumerChannelManager.AcquireChannel();
+					return _consumerChannelManager.AcquireChannelAsync();
 				default:
 					throw new ArgumentOutOfRangeException(nameof(channelType), channelType, null);
 			}
 		}
 
-		public void ReleaseChannel(ChannelType channelType, IModel channel)
+		public void ReleaseChannel(ChannelType channelType, IChannel channel)
 		{
 			switch (channelType)
 			{

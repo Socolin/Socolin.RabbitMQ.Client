@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Socolin.RabbitMQ.Client.Pipes.Consumer.Context;
 
@@ -13,9 +14,9 @@ namespace Socolin.RabbitMQ.Client.Pipes.Consumer
 			_pipeImpl = pipeImpl;
 		}
 
-		public override async Task ProcessAsync(IConsumerPipeContext<T> context, ReadOnlyMemory<IConsumerPipe<T>> pipeline)
+		public override async Task ProcessAsync(IConsumerPipeContext<T> context, ReadOnlyMemory<IConsumerPipe<T>> pipeline, CancellationToken cancellationToken = default)
 		{
-			Task Next() => ProcessNextAsync(context, pipeline);
+			Task Next() => ProcessNextAsync(context, pipeline, cancellationToken);
 			await _pipeImpl.Invoke(context, Next);
 		}
 	}

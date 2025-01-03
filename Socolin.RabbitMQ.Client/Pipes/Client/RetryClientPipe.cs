@@ -1,22 +1,20 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Socolin.RabbitMQ.Client.Pipes.Client.Context;
 using Socolin.RabbitMQ.Client.Pipes.Client.Utils;
 
 namespace Socolin.RabbitMQ.Client.Pipes.Client
 {
-	public class RetryClientPipe : ClientPipe, IGenericClientPipe
+	public class RetryClientPipe(IConnectionRetryUtil connectionRetryUtil) : ClientPipe, IGenericClientPipe
 	{
-		private readonly IConnectionRetryUtil _connectionRetryUtil;
-
-		public RetryClientPipe(IConnectionRetryUtil connectionRetryUtil)
+		public async Task ProcessAsync(
+			IClientPipeContext context,
+			ReadOnlyMemory<IClientPipe> pipeline,
+			CancellationToken cancellationToken = default
+		)
 		{
-			_connectionRetryUtil = connectionRetryUtil;
-		}
-
-		public async Task ProcessAsync(IClientPipeContext context, ReadOnlyMemory<IClientPipe> pipeline)
-		{
-			await _connectionRetryUtil.ExecuteWithRetryOnErrorsAsync(() => ProcessNextAsync(context, pipeline));
+			await connectionRetryUtil.ExecuteWithRetryOnErrorsAsync(() => ProcessNextAsync(context, pipeline, cancellationToken));
 		}
 	}
 }

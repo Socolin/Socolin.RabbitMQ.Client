@@ -2,6 +2,7 @@
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using RabbitMQ.Client;
 using Socolin.RabbitMQ.Client.Options.Client;
 using Socolin.RabbitMQ.Client.Options.Consumer;
 
@@ -15,7 +16,7 @@ namespace Socolin.RabbitMQ.Client.Example
 			const string queueName = "some-queue-name";
 			var options = new RabbitMqServiceOptionsBuilder()
 				.WithRetry(TimeSpan.FromSeconds(15), null, TimeSpan.FromSeconds(1))
-				.WithDeliveryMode(DeliveryMode.Persistent)
+				.WithDeliveryMode(DeliveryModes.Persistent)
 				.WithConnectionManager(rabbitMqConnectionManager)
 				.WithDefaultSerializer(message => Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(message)), "application/json")
 				.Build();
@@ -36,14 +37,14 @@ namespace Socolin.RabbitMQ.Client.Example
 			var consumerOptions = new ConsumerOptionsBuilder<string>()
 				.WithDefaultDeSerializer(message => JsonConvert.DeserializeObject<string>(Encoding.UTF8.GetString(message.Span)))
 				.WithSimpleMessageAck()
-				.WithCustomPipe(async (context, next) =>
+				.WithCustomPipe(async (_, next) =>
 				{
 					Console.WriteLine("Some logging message before processing");
 					await next();
 					Console.WriteLine("Some logging message after processing");
 				})
 				.Build();
-			var activeConsumer = await serviceClient.StartListeningQueueAsync(queueName, consumerOptions, (message, items, ct) =>
+			var activeConsumer = await serviceClient.StartListeningQueueAsync(queueName, consumerOptions, (message, _, _) =>
 			{
 				Console.WriteLine(message);
 				return Task.CompletedTask;
@@ -58,7 +59,7 @@ namespace Socolin.RabbitMQ.Client.Example
 			await queueClient.EnqueueMessageAsync("some-other-message");
 
 			// Cancel listening
-			activeConsumer.Cancel();
+			await activeConsumer.CancelAsync();
 
 			// Purge the queue
 			await serviceClient.PurgeQueueAsync(queueName);

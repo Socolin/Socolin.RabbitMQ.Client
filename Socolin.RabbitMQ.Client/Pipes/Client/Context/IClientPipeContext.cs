@@ -6,7 +6,7 @@ namespace Socolin.RabbitMQ.Client.Pipes.Client.Context
 	public interface IClientPipeContext
 	{
 		public ChannelContainer? ChannelContainer { set; }
-		public IModel? Channel { get; }
+		public IChannel? Channel { get; }
 
 		/// <summary>
 		/// A bag to store data that need to be between multiple pipe or accessed at the end

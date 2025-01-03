@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Moq;
 using NUnit.Framework;
@@ -14,18 +15,18 @@ namespace Socolin.RabbitMQ.Client.Tests.Unit
 	{
 		private const ulong DeliveryTag = 27972ul;
 		private const string RoutingKey = "some-routing-key";
-		private static readonly byte[] Body = {0x42, 0x66};
+		private static readonly byte[] Body = [0x42, 0x66];
 
 		private FastRetryMessageAcknowledgementPipe<string> _pipe;
 
 		private Mock<IRabbitMqConnectionManager> _rabbitMqConnectionManager;
 		private ConsumerPipeContext<string> _consumerPipeContext;
-		private Mock<IModel> _channelMock;
+		private Mock<IChannel> _channelMock;
 		private Mock<IConsumerPipe<string>> _nextPipeMock;
 		private ReadOnlyMemory<IConsumerPipe<string>> _fakePipeline;
 		private BasicDeliverEventArgs _basicDeliverEventArgs;
-		private FakeBasicProperties _basicProperties;
-		private Mock<IModel> _publishChannelMock;
+		private BasicProperties _basicProperties;
+		private Mock<IChannel> _publishChannelMock;
 
 		[SetUp]
 		public void Setup()
@@ -33,88 +34,92 @@ namespace Socolin.RabbitMQ.Client.Tests.Unit
 			_pipe = new FastRetryMessageAcknowledgementPipe<string>(2);
 
 			_nextPipeMock = new Mock<IConsumerPipe<string>>(MockBehavior.Strict);
-			_fakePipeline = new ReadOnlyMemory<IConsumerPipe<string>>(new[] {_nextPipeMock.Object});
-			_basicProperties = new FakeBasicProperties();
+			_fakePipeline = new ReadOnlyMemory<IConsumerPipe<string>>([_nextPipeMock.Object]);
+			_basicProperties = new BasicProperties();
 
-			_basicDeliverEventArgs = new BasicDeliverEventArgs
-			{
-				DeliveryTag = DeliveryTag,
-				RoutingKey = RoutingKey,
-				Body = Body,
-				BasicProperties = _basicProperties
-			};
+			_basicDeliverEventArgs = new BasicDeliverEventArgs(
+				"some-consumer-tag",
+				DeliveryTag,
+				false,
+				"some-exchange",
+				RoutingKey,
+				_basicProperties,
+				Body
+			);
 			_rabbitMqConnectionManager = new Mock<IRabbitMqConnectionManager>(MockBehavior.Strict);
-			_channelMock = new Mock<IModel>(MockBehavior.Strict);
-			_consumerPipeContext = new ConsumerPipeContext<string>(_rabbitMqConnectionManager.Object, _channelMock.Object, _basicDeliverEventArgs, (items, message, ct) => Task.CompletedTask, Mock.Of<IActiveMessageProcessorCanceller>());
+			_channelMock = new Mock<IChannel>(MockBehavior.Strict);
+			_consumerPipeContext = new ConsumerPipeContext<string>(_rabbitMqConnectionManager.Object, _channelMock.Object, _basicDeliverEventArgs, (_, _, _) => Task.CompletedTask, Mock.Of<IActiveMessageProcessorCanceller>());
 
-			_publishChannelMock = new Mock<IModel>();
-			_rabbitMqConnectionManager.Setup(m => m.AcquireChannel(ChannelType.Publish))
+			_publishChannelMock = new Mock<IChannel>(MockBehavior.Strict);
+			_rabbitMqConnectionManager.Setup(m => m.AcquireChannelAsync(ChannelType.Publish))
 				.ReturnsAsync(() => new ChannelContainer(Mock.Of<IRabbitMqChannelManager>(), _publishChannelMock.Object));
 		}
 
 		[Test]
-		public void ProcessAsync_WhenItWorks_AckTheMessage()
+		public async Task ProcessAsync_WhenItWorks_AckTheMessage()
 		{
-			_channelMock.Setup(m => m.BasicAck(DeliveryTag, false))
+			_channelMock.Setup(m => m.BasicAckAsync(DeliveryTag, false, It.IsAny<CancellationToken>()))
+				.Returns(ValueTask.CompletedTask)
 				.Verifiable();
-			_nextPipeMock.Setup(m => m.ProcessAsync(_consumerPipeContext, It.IsAny<ReadOnlyMemory<IConsumerPipe<string>>>()))
+			_nextPipeMock.Setup(m => m.ProcessAsync(_consumerPipeContext, It.IsAny<ReadOnlyMemory<IConsumerPipe<string>>>(), It.IsAny<CancellationToken>()))
 				.Returns(Task.CompletedTask);
 
-			_pipe.ProcessAsync(_consumerPipeContext, _fakePipeline);
+			await _pipe.ProcessAsync(_consumerPipeContext, _fakePipeline);
 
-			_channelMock.Verify(m => m.BasicAck(DeliveryTag, false), Times.Once);
+			_channelMock.Verify(m => m.BasicAckAsync(DeliveryTag, false, It.IsAny<CancellationToken>()), Times.Once);
 		}
 
 		[Test]
-		public void ProcessAsync_WhenProcessFail_AddHeaderOnMessageAndRepublishIt_AndAcknowledgeCurrentMessage()
+		public async Task ProcessAsync_WhenProcessFail_AddHeaderOnMessageAndRepublishIt_AndAcknowledgeCurrentMessage()
 		{
 			var s = new MockSequence();
-			_publishChannelMock.InSequence(s).Setup(m => m.BasicPublish(RabbitMqConstants.DefaultExchangeName, RoutingKey, true, _basicProperties, Body));
-			_channelMock.InSequence(s).Setup(m => m.BasicAck(DeliveryTag, false));
+			_publishChannelMock.InSequence(s).Setup(m => m.BasicPublishAsync(RabbitMqConstants.DefaultExchangeName, RoutingKey, true, It.Is<BasicProperties>(x => (int)x.Headers["RetryCount"] == 1), Body, It.IsAny<CancellationToken>()))
+				.Returns(ValueTask.CompletedTask);
+			_channelMock.InSequence(s).Setup(m => m.BasicAckAsync(DeliveryTag, false, It.IsAny<CancellationToken>()))
+				.Returns(ValueTask.CompletedTask);
 
-			_nextPipeMock.Setup(m => m.ProcessAsync(_consumerPipeContext, It.IsAny<ReadOnlyMemory<IConsumerPipe<string>>>()))
+			_nextPipeMock.Setup(m => m.ProcessAsync(_consumerPipeContext, It.IsAny<ReadOnlyMemory<IConsumerPipe<string>>>(), It.IsAny<CancellationToken>()))
 				.Returns(Task.FromException(new Exception("forced")));
 
-			_pipe.ProcessAsync(_consumerPipeContext, _fakePipeline);
+			await _pipe.ProcessAsync(_consumerPipeContext, _fakePipeline);
 
-			Assert.That(_basicProperties.Headers.ContainsKey("RetryCount"), Is.True);
-			Assert.That(_basicProperties.Headers["RetryCount"], Is.EqualTo(1));
-			_publishChannelMock.Verify(m => m.BasicPublish(RabbitMqConstants.DefaultExchangeName, RoutingKey, true, _basicProperties, Body), Times.Once);
-			_channelMock.Verify(m => m.BasicAck(DeliveryTag, false), Times.Once);
+			_publishChannelMock.Verify(m => m.BasicPublishAsync(RabbitMqConstants.DefaultExchangeName, RoutingKey, true, It.Is<BasicProperties>(x => (int)x.Headers["RetryCount"] == 1), Body, It.IsAny<CancellationToken>()), Times.Once);
+			_channelMock.Verify(m => m.BasicAckAsync(DeliveryTag, false, It.IsAny<CancellationToken>()), Times.Once);
 		}
 
 
 		[Test]
-		public void ProcessAsync_WhenProcessFail_IncrementRetryCount_AndRepublishMessageAndAckCurrentMessage()
+		public async Task ProcessAsync_WhenProcessFail_IncrementRetryCount_AndRepublishMessageAndAckCurrentMessage()
 		{
 			var s = new MockSequence();
-			_publishChannelMock.InSequence(s).Setup(m => m.BasicPublish(RabbitMqConstants.DefaultExchangeName, RoutingKey, true, _basicProperties, Body));
-			_channelMock.InSequence(s).Setup(m => m.BasicAck(DeliveryTag, false));
+			_publishChannelMock.InSequence(s).Setup(m => m.BasicPublishAsync(RabbitMqConstants.DefaultExchangeName, RoutingKey, true, It.Is<BasicProperties>(x => (int)x.Headers["RetryCount"] == 2), Body, It.IsAny<CancellationToken>()))
+				.Returns(ValueTask.CompletedTask);
+			_channelMock.InSequence(s).Setup(m => m.BasicAckAsync(DeliveryTag, false, It.IsAny<CancellationToken>()))
+				.Returns(ValueTask.CompletedTask);
 
 			_basicProperties.Headers = new Dictionary<string, object> {["RetryCount"] = 1};
-			_nextPipeMock.Setup(m => m.ProcessAsync(_consumerPipeContext, It.IsAny<ReadOnlyMemory<IConsumerPipe<string>>>()))
+			_nextPipeMock.Setup(m => m.ProcessAsync(_consumerPipeContext, It.IsAny<ReadOnlyMemory<IConsumerPipe<string>>>(), It.IsAny<CancellationToken>()))
 				.Returns(Task.FromException(new Exception("forced")));
 
-			_pipe.ProcessAsync(_consumerPipeContext, _fakePipeline);
+			await _pipe.ProcessAsync(_consumerPipeContext, _fakePipeline);
 
-			Assert.That(_basicProperties.Headers["RetryCount"], Is.EqualTo(2));
-			_publishChannelMock.Verify(m => m.BasicPublish(RabbitMqConstants.DefaultExchangeName, RoutingKey, true, _basicProperties, Body), Times.Once);
-			_channelMock.Verify(m => m.BasicAck(DeliveryTag, false), Times.Once);
+			_publishChannelMock.Verify(m => m.BasicPublishAsync(RabbitMqConstants.DefaultExchangeName, RoutingKey, true, It.Is<BasicProperties>(x => (int)x.Headers["RetryCount"] == 2), Body, It.IsAny<CancellationToken>()), Times.Once);
+			_channelMock.Verify(m => m.BasicAckAsync(DeliveryTag, false, It.IsAny<CancellationToken>()), Times.Once);
 		}
 
 		[Test]
-		public void ProcessAsync_WhenProcessFail_RejectMessageAfterTooManyRetry()
+		public async Task ProcessAsync_WhenProcessFail_RejectMessageAfterTooManyRetry()
 		{
-			_channelMock.Setup(m => m.BasicReject(DeliveryTag, false))
-				.Verifiable();
+			_channelMock.Setup(m => m.BasicRejectAsync(DeliveryTag, false, It.IsAny<CancellationToken>()))
+				.Returns(ValueTask.CompletedTask);
 
 			_basicProperties.Headers = new Dictionary<string, object> {["RetryCount"] = 2};
-			_nextPipeMock.Setup(m => m.ProcessAsync(_consumerPipeContext, It.IsAny<ReadOnlyMemory<IConsumerPipe<string>>>()))
+			_nextPipeMock.Setup(m => m.ProcessAsync(_consumerPipeContext, It.IsAny<ReadOnlyMemory<IConsumerPipe<string>>>(), It.IsAny<CancellationToken>()))
 				.Returns(Task.FromException(new Exception("forced")));
 
-			_pipe.ProcessAsync(_consumerPipeContext, _fakePipeline);
+			await _pipe.ProcessAsync(_consumerPipeContext, _fakePipeline);
 
-			_channelMock.Verify(m => m.BasicReject(DeliveryTag, false), Times.Once);
+			_channelMock.Verify(m => m.BasicRejectAsync(DeliveryTag, false, It.IsAny<CancellationToken>()), Times.Once);
 		}
 	}
 }

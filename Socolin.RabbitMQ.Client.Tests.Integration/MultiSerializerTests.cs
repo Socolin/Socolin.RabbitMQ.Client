@@ -21,7 +21,7 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 		[SetUp]
 		public void Setup()
 		{
-			_rabbitMqConnectionManager = new RabbitMqConnectionManager(InitRabbitMqDocker.RabbitMqUri, nameof(RabbitMqServiceClientTests), TimeSpan.FromSeconds(20));
+			_rabbitMqConnectionManager = new RabbitMqConnectionManager(InitRabbitMqDocker.RabbitMqUri, nameof(RabbitMqServiceClientTests), TimeSpan.FromSeconds(20), TimeSpan.FromSeconds(60));
 
 			var options = new RabbitMqServiceOptionsBuilder()
 				.WithRetry(TimeSpan.FromSeconds(15), null, TimeSpan.FromSeconds(1))
@@ -41,8 +41,8 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 			{
 				try
 				{
-					using var channelContainer = await _rabbitMqConnectionManager.AcquireChannel(ChannelType.Publish);
-					channelContainer.Channel.QueueDelete(_queueName, false, false);
+					using var channelContainer = await _rabbitMqConnectionManager.AcquireChannelAsync(ChannelType.Publish);
+					await channelContainer.Channel.QueueDeleteAsync(_queueName, false, false);
 				}
 				catch (Exception)
 				{
@@ -61,13 +61,13 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 			await _serviceClient.EnqueueMessageAsync(_queueName, new {test = "test2"}, "application/bson");
 			await Task.Delay(TimeSpan.FromMilliseconds(100));
 
-			using var channelContainer = await _rabbitMqConnectionManager.AcquireChannel(ChannelType.Consumer);
-			var message1 = channelContainer.Channel.BasicGet(_queueName, true);
-			message1.BasicProperties.ContentType.Should().Be("application/json");
+			using var channelContainer = await _rabbitMqConnectionManager.AcquireChannelAsync(ChannelType.Consumer);
+			var message1 = await channelContainer.Channel.BasicGetAsync(_queueName, true);
+			message1!.BasicProperties.ContentType.Should().Be("application/json");
 			Encoding.UTF8.GetString(message1.Body.Span).Should().BeEquivalentTo("{\"test\":\"test1\"}");
 
-			var message2 = channelContainer.Channel.BasicGet(_queueName, true);
-			message2.BasicProperties.ContentType.Should().Be("application/bson");
+			var message2 = await channelContainer.Channel.BasicGetAsync(_queueName, true);
+			message2!.BasicProperties.ContentType.Should().Be("application/bson");
 			message2.Body.ToArray().Should().BeEquivalentTo(new byte[]
 			{
 				0x15, 0x00, 0x00, 0x00, 0x02, 0x74, 0x65, 0x73, 0x74, 0x00, 0x06, 0x00, 0x00, 0x00, 0x74, 0x65, 0x73, 0x74, 0x32, 0x00, 0x00

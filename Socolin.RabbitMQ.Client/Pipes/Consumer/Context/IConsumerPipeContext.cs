@@ -11,7 +11,7 @@ namespace Socolin.RabbitMQ.Client.Pipes.Consumer.Context
 	public interface IConsumerPipeContext<T> where T : class
 	{
 		IRabbitMqConnectionManager ConnectionManager { get; }
-		IModel Chanel { get; }
+		IChannel Chanel { get; }
 		BasicDeliverEventArgs RabbitMqMessage { get; }
 		T? DeserializedMessage { get; set; }
 		IActiveMessageProcessorCanceller ActiveMessageProcessorCanceller { get; }

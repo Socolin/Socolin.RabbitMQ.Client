@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Socolin.RabbitMQ.Client.Pipes.Consumer.Context;
 
@@ -8,17 +9,17 @@ namespace Socolin.RabbitMQ.Client.Pipes.Consumer
 	{
 		private const string FinalAttemptItemsKey = "FinalAttempt";
 
-		public override async Task ProcessAsync(IConsumerPipeContext<T> context, ReadOnlyMemory<IConsumerPipe<T>> pipeline)
+		public override async Task ProcessAsync(IConsumerPipeContext<T> context, ReadOnlyMemory<IConsumerPipe<T>> pipeline, CancellationToken cancellationToken = default)
 		{
 			try
 			{
-				await ProcessNextAsync(context, pipeline);
+				await ProcessNextAsync(context, pipeline, cancellationToken);
 				context.Items[FinalAttemptItemsKey] = true;
-				context.Chanel.BasicAck(context.RabbitMqMessage.DeliveryTag, false);
+				await context.Chanel.BasicAckAsync(context.RabbitMqMessage.DeliveryTag, false, cancellationToken);
 			}
 			catch (Exception)
 			{
-				context.Chanel.BasicReject(context.RabbitMqMessage.DeliveryTag, false);
+				await context.Chanel.BasicRejectAsync(context.RabbitMqMessage.DeliveryTag, false, cancellationToken);
 			}
 		}
 	}

@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Threading;
 using System.Threading.Tasks;
+using RabbitMQ.Client;
 using Socolin.RabbitMQ.Client.Options.Client;
 using Socolin.RabbitMQ.Client.Pipes.Consumer.Context;
 
@@ -25,7 +27,7 @@ namespace Socolin.RabbitMQ.Client.Pipes.Consumer
 			_retryCountHeaderName = delayedRetryCountHeaderName ?? DefaultDelayedRetryCountHeader;
 		}
 
-		public override async Task ProcessAsync(IConsumerPipeContext<T> context, ReadOnlyMemory<IConsumerPipe<T>> pipeline)
+		public override async Task ProcessAsync(IConsumerPipeContext<T> context, ReadOnlyMemory<IConsumerPipe<T>> pipeline, CancellationToken cancellationToken = default)
 		{
 			var rMessage = context.RabbitMqMessage;
 
@@ -33,31 +35,36 @@ namespace Socolin.RabbitMQ.Client.Pipes.Consumer
 
 			try
 			{
-				await ProcessNextAsync(context, pipeline);
-				context.Chanel.BasicAck(rMessage.DeliveryTag, false);
+				await ProcessNextAsync(context, pipeline, cancellationToken);
+				await context.Chanel.BasicAckAsync(rMessage.DeliveryTag, false, cancellationToken);
 			}
 			catch (Exception)
 			{
 				if (rMessage.BasicProperties.Headers?.ContainsKey(_retryCountHeaderName) != true)
 				{
-					rMessage.BasicProperties.Headers ??= new Dictionary<string, object>();
-					rMessage.BasicProperties.Headers[_retryCountHeaderName] = 1;
-					rMessage.BasicProperties.Expiration = _retryDelays[0].TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
-					using (var channelContainer = await context.ConnectionManager.AcquireChannel(ChannelType.Publish))
-						channelContainer.Channel.BasicPublish(RabbitMqConstants.DefaultExchangeName, _delayedMessagesQueueName ?? DelayedQueueName(rMessage.RoutingKey), true, rMessage.BasicProperties, rMessage.Body);
-					context.Chanel.BasicAck(rMessage.DeliveryTag, false);
+					var basicProperties = new BasicProperties(rMessage.BasicProperties);
+					basicProperties.Headers ??= new Dictionary<string, object?>();
+					basicProperties.Headers[_retryCountHeaderName] = 1;
+					basicProperties.Expiration = _retryDelays[0].TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
+					using var channelContainer = await context.ConnectionManager.AcquireChannelAsync(ChannelType.Publish);
+					var delayedMessagesQueueName = _delayedMessagesQueueName ?? DelayedQueueName(rMessage.RoutingKey);
+					await channelContainer.Channel.BasicPublishAsync(RabbitMqConstants.DefaultExchangeName, delayedMessagesQueueName, true, basicProperties, rMessage.Body, cancellationToken);
+					await context.Chanel.BasicAckAsync(rMessage.DeliveryTag, false, cancellationToken);
 				}
 				else if (rMessage.BasicProperties.Headers?[_retryCountHeaderName] is int retryCount && retryCount < _retryDelays.Length)
 				{
-					rMessage.BasicProperties.Headers[_retryCountHeaderName] = retryCount + 1;
-					rMessage.BasicProperties.Expiration = _retryDelays[retryCount].TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
-					using (var channelContainer = await context.ConnectionManager.AcquireChannel(ChannelType.Publish))
-						channelContainer.Channel.BasicPublish(RabbitMqConstants.DefaultExchangeName, _delayedMessagesQueueName ?? DelayedQueueName(rMessage.RoutingKey), true, rMessage.BasicProperties, rMessage.Body);
-					context.Chanel.BasicAck(rMessage.DeliveryTag, false);
+					var basicProperties = new BasicProperties(rMessage.BasicProperties);
+					basicProperties.Headers ??= new Dictionary<string, object?>();
+					basicProperties.Headers[_retryCountHeaderName] = retryCount + 1;
+					basicProperties.Expiration = _retryDelays[retryCount].TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
+					using var channelContainer = await context.ConnectionManager.AcquireChannelAsync(ChannelType.Publish);
+					var delayedMessagesQueueName = _delayedMessagesQueueName ?? DelayedQueueName(rMessage.RoutingKey);
+					await channelContainer.Channel.BasicPublishAsync(RabbitMqConstants.DefaultExchangeName, delayedMessagesQueueName, true, basicProperties, rMessage.Body, cancellationToken);
+					await context.Chanel.BasicAckAsync(rMessage.DeliveryTag, false, cancellationToken);
 				}
 				else
 				{
-					context.Chanel.BasicReject(rMessage.DeliveryTag, false);
+					await context.Chanel.BasicRejectAsync(rMessage.DeliveryTag, false, cancellationToken);
 				}
 			}
 		}

@@ -20,9 +20,9 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 		private RabbitMqConnectionManager _rabbitMqConnectionManager;
 
 		[SetUp]
-		public void Setup()
+		public async Task Setup()
 		{
-			_rabbitMqConnectionManager = new RabbitMqConnectionManager(InitRabbitMqDocker.RabbitMqUri, nameof(RabbitMqServiceClientTests), TimeSpan.FromSeconds(20));
+			_rabbitMqConnectionManager = new RabbitMqConnectionManager(InitRabbitMqDocker.RabbitMqUri, nameof(RabbitMqServiceClientTests), TimeSpan.FromSeconds(20), TimeSpan.FromSeconds(60));
 
 			var options = new RabbitMqServiceOptionsBuilder()
 				.WithRetry(TimeSpan.FromSeconds(15), null, TimeSpan.FromSeconds(1))
@@ -31,7 +31,7 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 				.Build();
 			_serviceClient = new RabbitMqServiceClient(options);
 			_queueName = BaseQueueName + Guid.NewGuid();
-			_serviceClient.CreateQueueAsync(_queueName);
+			await _serviceClient.CreateQueueAsync(_queueName);
 		}
 
 		[TearDown]
@@ -41,8 +41,8 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 			{
 				try
 				{
-					using var channelContainer = await _rabbitMqConnectionManager.AcquireChannel(ChannelType.Publish);
-					channelContainer.Channel.QueueDelete(_queueName, false, false);
+					using var channelContainer = await _rabbitMqConnectionManager.AcquireChannelAsync(ChannelType.Publish);
+					await channelContainer.Channel.QueueDeleteAsync(_queueName, false, false);
 				}
 				catch (Exception)
 				{
@@ -65,7 +65,7 @@ namespace Socolin.RabbitMQ.Client.Tests.Integration
 				.WithErrorLogging((exception, lastAttempt) => receivedExceptions.Add((exception, lastAttempt)))
 				.Build();
 
-			await _serviceClient.StartListeningQueueAsync(_queueName, consumerOptions, (message, _, ct) =>
+			await _serviceClient.StartListeningQueueAsync(_queueName, consumerOptions, (_, _, _) =>
 			{
 				semaphore.Release();
 				return Task.FromException(thrownException);

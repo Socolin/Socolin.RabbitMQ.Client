@@ -3,20 +3,17 @@ using RabbitMQ.Client;
 
 namespace Socolin.RabbitMQ.Client
 {
-	public class ChannelContainer : IDisposable
+	public class ChannelContainer(
+		IRabbitMqChannelManager channelManager,
+		IChannel channel
+	)
+		: IDisposable
 	{
-		private readonly IRabbitMqChannelManager _channelManager;
-		public readonly IModel Channel;
-
-		public ChannelContainer(IRabbitMqChannelManager channelManager, IModel channel)
-		{
-			_channelManager = channelManager;
-			Channel = channel;
-		}
+		public readonly IChannel Channel = channel;
 
 		public void Dispose()
 		{
-			_channelManager.ReleaseChannel(Channel);
+			channelManager.ReleaseChannel(Channel);
 		}
 	}
 }

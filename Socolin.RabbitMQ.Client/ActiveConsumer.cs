@@ -5,7 +5,6 @@ namespace Socolin.RabbitMQ.Client
 {
 	public interface IActiveConsumer
 	{
-		void Cancel();
 		Task CancelAsync();
 		Task CancelAfterCurrentTaskCompletedAsync();
 	}
@@ -27,18 +26,10 @@ namespace Socolin.RabbitMQ.Client
 			_activeMessageProcessorCanceller = activeMessageProcessorCanceller;
 		}
 
-		public void Cancel()
-		{
-			_activeMessageProcessorCanceller.PreventStartProcessingNewMessage();
-			_channelContainer.Channel.BasicCancel(ConsumerTag);
-			_activeMessageProcessorCanceller.InterruptInProgressProcessor();
-			_channelContainer.Dispose();
-		}
-
 		public async Task CancelAsync()
 		{
 			_activeMessageProcessorCanceller.PreventStartProcessingNewMessage();
-			_channelContainer.Channel.BasicCancel(ConsumerTag);
+			await _channelContainer.Channel.BasicCancelAsync(ConsumerTag);
 			_activeMessageProcessorCanceller.InterruptInProgressProcessor();
 			_channelContainer.Dispose();
 			await _activeMessageProcessorCanceller.WaitCurrentProcessingMessageToComplete();
@@ -47,7 +38,7 @@ namespace Socolin.RabbitMQ.Client
 		public async Task CancelAfterCurrentTaskCompletedAsync()
 		{
 			_activeMessageProcessorCanceller.PreventStartProcessingNewMessage();
-			_channelContainer.Channel.BasicCancel(ConsumerTag);
+			await _channelContainer.Channel.BasicCancelAsync(ConsumerTag);
 			await _activeMessageProcessorCanceller.WaitCurrentProcessingMessageToComplete();
 			_channelContainer.Dispose();
 		}

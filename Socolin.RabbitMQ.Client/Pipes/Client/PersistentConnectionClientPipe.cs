@@ -1,27 +1,26 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Socolin.RabbitMQ.Client.Pipes.Client.Context;
 
 namespace Socolin.RabbitMQ.Client.Pipes.Client
 {
-	public class PersistentConnectionClientPipe : ClientPipe, IGenericClientPipe
+	public class PersistentConnectionClientPipe(
+		IRabbitMqConnectionManager connectionManager,
+		ChannelType channelType
+	) : ClientPipe, IGenericClientPipe
 	{
-		private readonly IRabbitMqConnectionManager _connectionManager;
-		private readonly ChannelType _channelType;
-
-		public PersistentConnectionClientPipe(IRabbitMqConnectionManager connectionManager, ChannelType channelType)
+		public async Task ProcessAsync(
+			IClientPipeContext context,
+			ReadOnlyMemory<IClientPipe> pipeline,
+			CancellationToken cancellationToken = default
+		)
 		{
-			_connectionManager = connectionManager;
-			_channelType = channelType;
-		}
-
-		public async Task ProcessAsync(IClientPipeContext context, ReadOnlyMemory<IClientPipe> pipeline)
-		{
-			var channelContainer = await _connectionManager.AcquireChannel(_channelType);
+			var channelContainer = await connectionManager.AcquireChannelAsync(channelType);
 			try
 			{
 				context.ChannelContainer = channelContainer;
-				await ProcessNextAsync(context, pipeline);
+				await ProcessNextAsync(context, pipeline, cancellationToken);
 			}
 			catch
 			{

@@ -7,10 +7,9 @@ namespace Socolin.RabbitMQ.Client.Pipes.Client.Context
 		public static bool TryGetOptionalItemValue<T>(this IClientPipeContext context, string key, out T value)
 		{
 			value = default!;
-			if (!context.Items.ContainsKey(key))
+			if (!context.Items.TryGetValue(key, out var obj))
 				return false;
-			var obj = context.Items[key];
-			if (!(obj is T v))
+			if (obj is not T v)
 				throw new MissingItemInContextException(key, typeof(T));
 			value = v;
 			return true;
@@ -18,10 +17,9 @@ namespace Socolin.RabbitMQ.Client.Pipes.Client.Context
 
 		public static T GetItemValue<T>(this IClientPipeContext context, string key)
 		{
-			if (!context.Items.ContainsKey(key))
+			if (!context.Items.TryGetValue(key, out var obj))
 				throw new MissingItemInContextException(key, typeof(T));
-			var obj = context.Items[key];
-			if (!(obj is T value))
+			if (obj is not T value)
 				throw new MissingItemInContextException(key, typeof(T));
 			return value;
 		}
