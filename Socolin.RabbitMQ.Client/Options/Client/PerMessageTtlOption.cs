@@ -1,12 +1,11 @@
-namespace Socolin.RabbitMQ.Client.Options.Client
-{
-	public class PerMessageTtlOption
-	{
-		public readonly int? PerMessageTTl;
+namespace Socolin.RabbitMQ.Client.Options.Client;
 
-		public PerMessageTtlOption(int? perMessageTTl)
-		{
-			PerMessageTTl = perMessageTTl;
-		}
+public class PerMessageTtlOption
+{
+	public readonly int? PerMessageTTl;
+
+	public PerMessageTtlOption(int? perMessageTTl)
+	{
+		PerMessageTTl = perMessageTTl;
 	}
 }

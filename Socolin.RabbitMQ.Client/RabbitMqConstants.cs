@@ -1,7 +1,6 @@
-namespace Socolin.RabbitMQ.Client
+namespace Socolin.RabbitMQ.Client;
+
+public static class RabbitMqConstants
 {
-	public static class RabbitMqConstants
-	{
-		public const string DefaultExchangeName = "";
-	}
+	public const string DefaultExchangeName = "";
 }

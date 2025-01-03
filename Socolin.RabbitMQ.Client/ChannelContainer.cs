@@ -1,19 +1,18 @@
 using System;
 using RabbitMQ.Client;
 
-namespace Socolin.RabbitMQ.Client
-{
-	public class ChannelContainer(
-		IRabbitMqChannelManager channelManager,
-		IChannel channel
-	)
-		: IDisposable
-	{
-		public readonly IChannel Channel = channel;
+namespace Socolin.RabbitMQ.Client;
 
-		public void Dispose()
-		{
-			channelManager.ReleaseChannel(Channel);
-		}
+public class ChannelContainer(
+	IRabbitMqChannelManager channelManager,
+	IChannel channel
+)
+	: IDisposable
+{
+	public readonly IChannel Channel = channel;
+
+	public void Dispose()
+	{
+		channelManager.ReleaseChannel(Channel);
 	}
 }

@@ -2,57 +2,56 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Socolin.RabbitMQ.Client.Pipes.Consumer
+namespace Socolin.RabbitMQ.Client.Pipes.Consumer;
+
+public interface IActiveMessageProcessorCanceller
 {
-	public interface IActiveMessageProcessorCanceller
+	void InterruptInProgressProcessor();
+	Task WaitCurrentProcessingMessageToComplete();
+	void PreventStartProcessingNewMessage();
+	CancellationToken StopProcessingNewMessageToken { get; }
+	CancellationToken InterruptInProgressProcessorToken { get; }
+	bool BeginProcessing();
+	void EndProcessing();
+	bool IsInterrupted();
+}
+
+public class ActiveMessageProcessorCanceller : IActiveMessageProcessorCanceller
+{
+	public CancellationToken StopProcessingNewMessageToken => _stopProcessingNewMessage.Token;
+	public CancellationToken InterruptInProgressProcessorToken => _interruptInProgressProcessor.Token;
+
+	private readonly CancellationTokenSource _interruptInProgressProcessor = new CancellationTokenSource();
+	private readonly CancellationTokenSource _stopProcessingNewMessage = new CancellationTokenSource();
+	private readonly SemaphoreSlim _processingSemaphore = new SemaphoreSlim(1);
+
+	void IActiveMessageProcessorCanceller.InterruptInProgressProcessor()
 	{
-		void InterruptInProgressProcessor();
-		Task WaitCurrentProcessingMessageToComplete();
-		void PreventStartProcessingNewMessage();
-		CancellationToken StopProcessingNewMessageToken { get; }
-		CancellationToken InterruptInProgressProcessorToken { get; }
-		bool BeginProcessing();
-		void EndProcessing();
-		bool IsInterrupted();
+		_interruptInProgressProcessor.Cancel();
 	}
 
-	public class ActiveMessageProcessorCanceller : IActiveMessageProcessorCanceller
+	public Task WaitCurrentProcessingMessageToComplete()
 	{
-		public CancellationToken StopProcessingNewMessageToken => _stopProcessingNewMessage.Token;
-		public CancellationToken InterruptInProgressProcessorToken => _interruptInProgressProcessor.Token;
+		return _processingSemaphore.WaitAsync();
+	}
 
-		private readonly CancellationTokenSource _interruptInProgressProcessor = new CancellationTokenSource();
-		private readonly CancellationTokenSource _stopProcessingNewMessage = new CancellationTokenSource();
-		private readonly SemaphoreSlim _processingSemaphore = new SemaphoreSlim(1);
+	public void PreventStartProcessingNewMessage()
+	{
+		_stopProcessingNewMessage.Cancel();
+	}
 
-		void IActiveMessageProcessorCanceller.InterruptInProgressProcessor()
-		{
-			_interruptInProgressProcessor.Cancel();
-		}
+	public bool BeginProcessing()
+	{
+		return _processingSemaphore.Wait(TimeSpan.Zero);
+	}
 
-		public Task WaitCurrentProcessingMessageToComplete()
-		{
-			return _processingSemaphore.WaitAsync();
-		}
+	public void EndProcessing()
+	{
+		_processingSemaphore.Release();
+	}
 
-		public void PreventStartProcessingNewMessage()
-		{
-			_stopProcessingNewMessage.Cancel();
-		}
-
-		public bool BeginProcessing()
-		{
-			return _processingSemaphore.Wait(TimeSpan.Zero);
-		}
-
-		public void EndProcessing()
-		{
-			_processingSemaphore.Release();
-		}
-
-		public bool IsInterrupted()
-		{
-			return InterruptInProgressProcessorToken.IsCancellationRequested;
-		}
+	public bool IsInterrupted()
+	{
+		return InterruptInProgressProcessorToken.IsCancellationRequested;
 	}
 }

@@ -2,54 +2,53 @@ using System;
 using System.Threading.Tasks;
 using RabbitMQ.Client.Exceptions;
 
-namespace Socolin.RabbitMQ.Client.Pipes.Client.Utils
+namespace Socolin.RabbitMQ.Client.Pipes.Client.Utils;
+
+public class ConnectionRetryWithDelaysUtil : IConnectionRetryUtil
 {
-	public class ConnectionRetryWithDelaysUtil : IConnectionRetryUtil
+	private readonly TimeSpan[] _delaysBetweenRetry;
+
+	public ConnectionRetryWithDelaysUtil(TimeSpan[] delaysBetweenRetry)
 	{
-		private readonly TimeSpan[] _delaysBetweenRetry;
+		_delaysBetweenRetry = delaysBetweenRetry;
+	}
 
-		public ConnectionRetryWithDelaysUtil(TimeSpan[] delaysBetweenRetry)
+	public async Task ExecuteWithRetryOnErrorsAsync(Func<Task> work)
+	{
+		var retryCount = 0;
+
+		while (true)
 		{
-			_delaysBetweenRetry = delaysBetweenRetry;
-		}
+			if (retryCount > 0)
+				await Task.Delay(_delaysBetweenRetry[retryCount - 1]);
 
-		public async Task ExecuteWithRetryOnErrorsAsync(Func<Task> work)
-		{
-			var retryCount = 0;
-
-			while (true)
+			retryCount++;
+			try
 			{
-				if (retryCount > 0)
-					await Task.Delay(_delaysBetweenRetry[retryCount - 1]);
-
-				retryCount++;
-				try
-				{
-					await work();
-				}
-				catch (AlreadyClosedException)
-				{
-					if (ShouldRetry(retryCount))
-						continue;
-					throw;
-				}
-				catch (BrokerUnreachableException)
-				{
-					if (ShouldRetry(retryCount))
-						continue;
-					throw;
-				}
-
-				break;
+				await work();
 			}
-		}
+			catch (AlreadyClosedException)
+			{
+				if (ShouldRetry(retryCount))
+					continue;
+				throw;
+			}
+			catch (BrokerUnreachableException)
+			{
+				if (ShouldRetry(retryCount))
+					continue;
+				throw;
+			}
 
-		private bool ShouldRetry(int retryCount)
-		{
-			if (retryCount <= _delaysBetweenRetry.Length)
-				return true;
-
-			return false;
+			break;
 		}
+	}
+
+	private bool ShouldRetry(int retryCount)
+	{
+		if (retryCount <= _delaysBetweenRetry.Length)
+			return true;
+
+		return false;
 	}
 }

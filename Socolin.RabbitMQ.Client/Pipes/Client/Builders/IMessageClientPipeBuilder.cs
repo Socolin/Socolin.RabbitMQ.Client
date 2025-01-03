@@ -1,7 +1,6 @@
-namespace Socolin.RabbitMQ.Client.Pipes.Client.Builders
+namespace Socolin.RabbitMQ.Client.Pipes.Client.Builders;
+
+public interface IMessageClientPipeBuilder : IClientPipeBuilder
 {
-	public interface IMessageClientPipeBuilder : IClientPipeBuilder
-	{
-		IMessageClientPipe BuildPipe();
-	}
+	IMessageClientPipe BuildPipe();
 }

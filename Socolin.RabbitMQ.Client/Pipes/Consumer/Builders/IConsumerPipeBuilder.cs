@@ -1,7 +1,6 @@
-namespace Socolin.RabbitMQ.Client.Pipes.Consumer.Builders
+namespace Socolin.RabbitMQ.Client.Pipes.Consumer.Builders;
+
+public interface IConsumerPipeBuilder<T> where T : class
 {
-	public interface IConsumerPipeBuilder<T> where T : class
-	{
-		IConsumerPipe<T> Build();
-	}
+	IConsumerPipe<T> Build();
 }

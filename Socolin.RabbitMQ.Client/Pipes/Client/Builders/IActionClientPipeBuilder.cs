@@ -1,7 +1,6 @@
-namespace Socolin.RabbitMQ.Client.Pipes.Client.Builders
+namespace Socolin.RabbitMQ.Client.Pipes.Client.Builders;
+
+public interface IActionClientPipeBuilder : IClientPipeBuilder
 {
-	public interface IActionClientPipeBuilder : IClientPipeBuilder
-	{
-		IActionClientPipe BuildPipe();
-	}
+	IActionClientPipe BuildPipe();
 }

@@ -4,64 +4,63 @@ using System.Threading.Tasks;
 using RabbitMQ.Client.Exceptions;
 using Socolin.RabbitMQ.Client.Pipes.Client.Builders;
 
-namespace Socolin.RabbitMQ.Client.Pipes.Client.Utils
+namespace Socolin.RabbitMQ.Client.Pipes.Client.Utils;
+
+public interface IConnectionRetryUtil
 {
-	public interface IConnectionRetryUtil
+	Task ExecuteWithRetryOnErrorsAsync(Func<Task> work);
+}
+
+public class ConnectionRetryUtil : IConnectionRetryUtil
+{
+	private readonly RetryClientPipeBuilder _retryClientPipeBuilder;
+
+	public ConnectionRetryUtil(RetryClientPipeBuilder retryClientPipeBuilder)
 	{
-		Task ExecuteWithRetryOnErrorsAsync(Func<Task> work);
+		_retryClientPipeBuilder = retryClientPipeBuilder;
+		if (_retryClientPipeBuilder.DelayBetweenRetry == null)
+			throw new ArgumentNullException(nameof(retryClientPipeBuilder), "DelayBetweenRetry is required");
 	}
 
-	public class ConnectionRetryUtil : IConnectionRetryUtil
+	public async Task ExecuteWithRetryOnErrorsAsync(Func<Task> work)
 	{
-		private readonly RetryClientPipeBuilder _retryClientPipeBuilder;
+		var retryCount = 0;
+		var sw = Stopwatch.StartNew();
 
-		public ConnectionRetryUtil(RetryClientPipeBuilder retryClientPipeBuilder)
+		while (true)
 		{
-			_retryClientPipeBuilder = retryClientPipeBuilder;
-			if (_retryClientPipeBuilder.DelayBetweenRetry == null)
-				throw new ArgumentNullException(nameof(retryClientPipeBuilder), "DelayBetweenRetry is required");
-		}
+			if (retryCount > 0)
+				await Task.Delay(_retryClientPipeBuilder.DelayBetweenRetry!.Value);
 
-		public async Task ExecuteWithRetryOnErrorsAsync(Func<Task> work)
-		{
-			var retryCount = 0;
-			var sw = Stopwatch.StartNew();
-
-			while (true)
+			retryCount++;
+			try
 			{
-				if (retryCount > 0)
-					await Task.Delay(_retryClientPipeBuilder.DelayBetweenRetry!.Value);
-
-				retryCount++;
-				try
-				{
-					await work();
-				}
-				catch (AlreadyClosedException)
-				{
-					if (ShouldRetry(retryCount, sw))
-						continue;
-					throw;
-				}
-				catch (BrokerUnreachableException)
-				{
-					if (ShouldRetry(retryCount, sw))
-						continue;
-					throw;
-				}
-
-				break;
+				await work();
 			}
-		}
+			catch (AlreadyClosedException)
+			{
+				if (ShouldRetry(retryCount, sw))
+					continue;
+				throw;
+			}
+			catch (BrokerUnreachableException)
+			{
+				if (ShouldRetry(retryCount, sw))
+					continue;
+				throw;
+			}
 
-		private bool ShouldRetry(int retryCount, Stopwatch sw)
-		{
-			if (_retryClientPipeBuilder.MaxRetryCount.HasValue && retryCount <= _retryClientPipeBuilder.MaxRetryCount)
-				return true;
-			if (_retryClientPipeBuilder.MaxRetryDuration.HasValue)
-				if (sw.ElapsedMilliseconds + _retryClientPipeBuilder.DelayBetweenRetry!.Value.TotalMilliseconds < _retryClientPipeBuilder.MaxRetryDuration.Value.TotalMilliseconds)
-					return true;
-			return false;
+			break;
 		}
+	}
+
+	private bool ShouldRetry(int retryCount, Stopwatch sw)
+	{
+		if (_retryClientPipeBuilder.MaxRetryCount.HasValue && retryCount <= _retryClientPipeBuilder.MaxRetryCount)
+			return true;
+		if (_retryClientPipeBuilder.MaxRetryDuration.HasValue)
+			if (sw.ElapsedMilliseconds + _retryClientPipeBuilder.DelayBetweenRetry!.Value.TotalMilliseconds < _retryClientPipeBuilder.MaxRetryDuration.Value.TotalMilliseconds)
+				return true;
+		return false;
 	}
 }

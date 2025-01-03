@@ -1,20 +1,19 @@
 using System.Collections.Generic;
 
-namespace Socolin.RabbitMQ.Client.Options.Client
+namespace Socolin.RabbitMQ.Client.Options.Client;
+
+public delegate byte[] SerializerDelegate(object message);
+
+public class SerializationOptions
 {
-	public delegate byte[] SerializerDelegate(object message);
+	public readonly SerializerDelegate? Serializer;
+	public readonly string? ContentType;
+	public readonly Dictionary<string, SerializerDelegate> Serializers;
 
-	public class SerializationOptions
+	public SerializationOptions(SerializerDelegate? serializer, string? contentType, Dictionary<string, SerializerDelegate> serializers)
 	{
-		public readonly SerializerDelegate? Serializer;
-		public readonly string? ContentType;
-		public readonly Dictionary<string, SerializerDelegate> Serializers;
-
-		public SerializationOptions(SerializerDelegate? serializer, string? contentType, Dictionary<string, SerializerDelegate> serializers)
-		{
-			Serializer = serializer;
-			ContentType = contentType;
-			Serializers = serializers;
-		}
+		Serializer = serializer;
+		ContentType = contentType;
+		Serializers = serializers;
 	}
 }

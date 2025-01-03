@@ -1,12 +1,11 @@
 using System;
 
-namespace Socolin.RabbitMQ.Client.Exceptions
+namespace Socolin.RabbitMQ.Client.Exceptions;
+
+public class InvalidBuilderOptionsException : Exception
 {
-	public class InvalidBuilderOptionsException : Exception
+	public InvalidBuilderOptionsException(string message)
+		: base(message)
 	{
-		public InvalidBuilderOptionsException(string message)
-			: base(message)
-		{
-		}
 	}
 }

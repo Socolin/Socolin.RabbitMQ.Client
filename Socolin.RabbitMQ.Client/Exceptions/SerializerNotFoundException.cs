@@ -1,11 +1,10 @@
 using System;
 
-namespace Socolin.RabbitMQ.Client.Exceptions
+namespace Socolin.RabbitMQ.Client.Exceptions;
+
+public class SerializerNotFoundException : Exception
 {
-	public class SerializerNotFoundException : Exception
+	public SerializerNotFoundException(string message) : base(message)
 	{
-		public SerializerNotFoundException(string message) : base(message)
-		{
-		}
 	}
 }

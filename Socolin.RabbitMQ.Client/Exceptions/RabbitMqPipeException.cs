@@ -1,11 +1,10 @@
 using System;
 
-namespace Socolin.RabbitMQ.Client.Exceptions
+namespace Socolin.RabbitMQ.Client.Exceptions;
+
+public class RabbitMqPipeException : Exception
 {
-	public class RabbitMqPipeException : Exception
+	public RabbitMqPipeException(string message) : base(message)
 	{
-		public RabbitMqPipeException(string message) : base(message)
-		{
-		}
 	}
 }

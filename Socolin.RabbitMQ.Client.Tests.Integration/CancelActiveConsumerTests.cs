@@ -7,103 +7,102 @@ using NUnit.Framework;
 using Socolin.RabbitMQ.Client.Options.Client;
 using Socolin.RabbitMQ.Client.Options.Consumer;
 
-namespace Socolin.RabbitMQ.Client.Tests.Integration
+namespace Socolin.RabbitMQ.Client.Tests.Integration;
+
+public class CancelActiveConsumerTests
 {
-	public class CancelActiveConsumerTests
+	private static readonly string BaseQueueName = $"Queue-{nameof(RabbitMqServiceClientTests)}";
+
+	private string _queueName;
+	private RabbitMqServiceClient _serviceClient;
+	private RabbitMqConnectionManager _rabbitMqConnectionManager;
+
+	[SetUp]
+	public async Task Setup()
 	{
-		private static readonly string BaseQueueName = $"Queue-{nameof(RabbitMqServiceClientTests)}";
+		_rabbitMqConnectionManager = new RabbitMqConnectionManager(InitRabbitMqDocker.RabbitMqUri, nameof(RabbitMqServiceClientTests), TimeSpan.FromSeconds(20), TimeSpan.FromSeconds(60));
 
-		private string _queueName;
-		private RabbitMqServiceClient _serviceClient;
-		private RabbitMqConnectionManager _rabbitMqConnectionManager;
+		var options = new RabbitMqServiceOptionsBuilder()
+			.WithRetry(TimeSpan.FromSeconds(15), null, TimeSpan.FromSeconds(1))
+			.WithConnectionManager(_rabbitMqConnectionManager)
+			.WithDefaultSerializer(message => Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(message)), "application/json")
+			.Build();
+		_serviceClient = new RabbitMqServiceClient(options);
+		_queueName = BaseQueueName + Guid.NewGuid();
+		await _serviceClient.CreateQueueAsync(_queueName);
+	}
 
-		[SetUp]
-		public async Task Setup()
+	[TearDown]
+	public async Task TearDown()
+	{
+		if (_queueName != null)
 		{
-			_rabbitMqConnectionManager = new RabbitMqConnectionManager(InitRabbitMqDocker.RabbitMqUri, nameof(RabbitMqServiceClientTests), TimeSpan.FromSeconds(20), TimeSpan.FromSeconds(60));
-
-			var options = new RabbitMqServiceOptionsBuilder()
-				.WithRetry(TimeSpan.FromSeconds(15), null, TimeSpan.FromSeconds(1))
-				.WithConnectionManager(_rabbitMqConnectionManager)
-				.WithDefaultSerializer(message => Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(message)), "application/json")
-				.Build();
-			_serviceClient = new RabbitMqServiceClient(options);
-			_queueName = BaseQueueName + Guid.NewGuid();
-			await _serviceClient.CreateQueueAsync(_queueName);
-		}
-
-		[TearDown]
-		public async Task TearDown()
-		{
-			if (_queueName != null)
+			try
 			{
-				try
-				{
-					using var channelContainer = await _rabbitMqConnectionManager.AcquireChannelAsync(ChannelType.Publish);
-					await channelContainer.Channel.QueueDeleteAsync(_queueName, false, false);
-				}
-				catch (Exception)
-				{
-					// Ignored
-				}
+				using var channelContainer = await _rabbitMqConnectionManager.AcquireChannelAsync(ChannelType.Publish);
+				await channelContainer.Channel.QueueDeleteAsync(_queueName, false, false);
 			}
-
-			_rabbitMqConnectionManager.Dispose();
-		}
-
-		[Test]
-		public async Task CanCancelAndWaitCurrentTaskToBeCompleted()
-		{
-			var consumerOptions = new ConsumerOptionsBuilder<string>()
-				.WithDefaultDeSerializer(message => JsonConvert.DeserializeObject<string>(Encoding.UTF8.GetString(message.Span)))
-				.WithSimpleMessageAck()
-				.Build();
-
-			var completed = false;
-			var messageCount = 0;
-			var activeConsumer = await _serviceClient.StartListeningQueueAsync(_queueName, consumerOptions, async (_, _, ct) =>
+			catch (Exception)
 			{
-				messageCount++;
-				await Task.Delay(TimeSpan.FromSeconds(1), ct);
-				completed = true;
-			});
-
-			await _serviceClient.EnqueueMessageAsync(_queueName, "some-message");
-			await _serviceClient.EnqueueMessageAsync(_queueName, "some-message");
-			await Task.Delay(TimeSpan.FromMilliseconds(200));
-
-			await activeConsumer.CancelAfterCurrentTaskCompletedAsync();
-
-			messageCount.Should().Be(1);
-			completed.Should().Be(true);
+				// Ignored
+			}
 		}
 
+		_rabbitMqConnectionManager.Dispose();
+	}
 
-		[Test]
-		public async Task CanCancelAndInterruptCurrentProcessing()
+	[Test]
+	public async Task CanCancelAndWaitCurrentTaskToBeCompleted()
+	{
+		var consumerOptions = new ConsumerOptionsBuilder<string>()
+			.WithDefaultDeSerializer(message => JsonConvert.DeserializeObject<string>(Encoding.UTF8.GetString(message.Span)))
+			.WithSimpleMessageAck()
+			.Build();
+
+		var completed = false;
+		var messageCount = 0;
+		var activeConsumer = await _serviceClient.StartListeningQueueAsync(_queueName, consumerOptions, async (_, _, ct) =>
 		{
-			var consumerOptions = new ConsumerOptionsBuilder<string>()
-				.WithDefaultDeSerializer(message => JsonConvert.DeserializeObject<string>(Encoding.UTF8.GetString(message.Span)))
-				.WithSimpleMessageAck()
-				.Build();
+			messageCount++;
+			await Task.Delay(TimeSpan.FromSeconds(1), ct);
+			completed = true;
+		});
 
-			var completed = false;
-			var messageCount = 0;
-			var activeConsumer = await _serviceClient.StartListeningQueueAsync(_queueName, consumerOptions, async (_, _, ct) =>
-			{
-				messageCount++;
-				await Task.Delay(TimeSpan.FromSeconds(1), ct);
-				completed = true;
-			});
+		await _serviceClient.EnqueueMessageAsync(_queueName, "some-message");
+		await _serviceClient.EnqueueMessageAsync(_queueName, "some-message");
+		await Task.Delay(TimeSpan.FromMilliseconds(200));
 
-			await _serviceClient.EnqueueMessageAsync(_queueName, "some-message");
-			await _serviceClient.EnqueueMessageAsync(_queueName, "some-message");
-			await Task.Delay(TimeSpan.FromMilliseconds(200));
+		await activeConsumer.CancelAfterCurrentTaskCompletedAsync();
 
-			await activeConsumer.CancelAsync();
+		messageCount.Should().Be(1);
+		completed.Should().Be(true);
+	}
 
-			messageCount.Should().Be(1);
-			completed.Should().Be(false);
-		}
+
+	[Test]
+	public async Task CanCancelAndInterruptCurrentProcessing()
+	{
+		var consumerOptions = new ConsumerOptionsBuilder<string>()
+			.WithDefaultDeSerializer(message => JsonConvert.DeserializeObject<string>(Encoding.UTF8.GetString(message.Span)))
+			.WithSimpleMessageAck()
+			.Build();
+
+		var completed = false;
+		var messageCount = 0;
+		var activeConsumer = await _serviceClient.StartListeningQueueAsync(_queueName, consumerOptions, async (_, _, ct) =>
+		{
+			messageCount++;
+			await Task.Delay(TimeSpan.FromSeconds(1), ct);
+			completed = true;
+		});
+
+		await _serviceClient.EnqueueMessageAsync(_queueName, "some-message");
+		await _serviceClient.EnqueueMessageAsync(_queueName, "some-message");
+		await Task.Delay(TimeSpan.FromMilliseconds(200));
+
+		await activeConsumer.CancelAsync();
+
+		messageCount.Should().Be(1);
+		completed.Should().Be(false);
 	}
 }
