@@ -1,3 +1,7 @@
+2.0.0
+
+- Convert to RabbitMQ.Client
+
 1.7.9
 
 - Add method to get the number of consumers
