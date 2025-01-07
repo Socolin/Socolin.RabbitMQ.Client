@@ -1,3 +1,7 @@
+2.0.1
+
+- Fix "Too many channel allocated"
+
 2.0.0
 
 - Convert to RabbitMQ.Client

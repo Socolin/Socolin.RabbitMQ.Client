@@ -98,7 +98,7 @@ public class RabbitMqChannelManager(
 	{
 		if (channel.IsClosed)
 			return;
-		Interlocked.Increment(ref _usedChannelCount);
+		Interlocked.Decrement(ref _usedChannelCount);
 		_availableChannelPool.Add(channel);
 	}
 
