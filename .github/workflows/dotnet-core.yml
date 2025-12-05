@@ -24,9 +24,14 @@ jobs:
       run: dotnet build --configuration Release --no-restore
     - name: Unit Tests
       run: dotnet test --configuration Release --no-restore --no-build Socolin.RabbitMQ.Client.Tests.Unit
-    - name: Publish Socolin.RabbitMQ.Client
-      uses: socolin/publish-nuget@master
+    - name: dotnet pack
+      run: |
+        dotnet pack -o tmp
+    - name: NuGet login (OIDC → temp API key)
+      uses: NuGet/login@v1
+      id: login
       with:
-        PROJECT_FILE_PATH: Socolin.RabbitMQ.Client/Socolin.RabbitMQ.Client.csproj
-        INCLUDE_SYMBOLS: true
-        NUGET_KEY: ${{secrets.NUGET_API_KEY}}
+        # Secret is your NuGet username, e.g. andrewlock
+        user: ${{ secrets.NUGET_USER }}
+    - name: NuGet push
+      run: dotnet nuget push tmp/*.nupkg --api-key ${{steps.login.outputs.NUGET_API_KEY}} --source https://api.nuget.org/v3/index.json
