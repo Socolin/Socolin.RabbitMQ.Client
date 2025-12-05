@@ -8,7 +8,7 @@ namespace Socolin.RabbitMQ.Client;
 public enum ChannelType
 {
 	Publish,
-	Consumer
+	Consumer,
 }
 
 [PublicAPI]
@@ -18,14 +18,25 @@ public interface IRabbitMqConnectionManager : IDisposable
 	void ReleaseChannel(ChannelType channelType, IChannel channel);
 }
 
-public class RabbitMqConnectionManager(Uri uri, string connectionName, TimeSpan connectionTimeout, TimeSpan requestedHeart)
+public class RabbitMqConnectionManager(
+	Uri uri,
+	string connectionName,
+	TimeSpan connectionTimeout,
+	TimeSpan requestedHeart,
+	ushort maxChannelPerConnection
+)
 	: IRabbitMqConnectionManager
 {
-	private readonly IRabbitMqChannelManager _publishChannelManager = new RabbitMqChannelManager(uri, connectionName, connectionTimeout, ChannelType.Publish, requestedHeart);
-	private readonly IRabbitMqChannelManager _consumerChannelManager = new RabbitMqChannelManager(uri, connectionName, connectionTimeout, ChannelType.Consumer, requestedHeart);
+	private readonly IRabbitMqChannelManager _publishChannelManager = new RabbitMqChannelManager(uri, connectionName, connectionTimeout, ChannelType.Publish, requestedHeart, maxChannelPerConnection);
+	private readonly IRabbitMqChannelManager _consumerChannelManager = new RabbitMqChannelManager(uri, connectionName, connectionTimeout, ChannelType.Consumer, requestedHeart, maxChannelPerConnection);
 
 	public RabbitMqConnectionManager(Uri uri, string connectionName, TimeSpan connectionTimeout)
 		: this(uri, connectionName, connectionTimeout, System.Threading.Timeout.InfiniteTimeSpan)
+	{
+	}
+
+	public RabbitMqConnectionManager(Uri uri, string connectionName, TimeSpan connectionTimeout, TimeSpan requestedHeart)
+		: this(uri, connectionName, connectionTimeout, requestedHeart, 90)
 	{
 	}
 

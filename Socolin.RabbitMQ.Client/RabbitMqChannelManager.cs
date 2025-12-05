@@ -19,26 +19,15 @@ public class RabbitMqChannelManager(
 	string connectionName,
 	TimeSpan connectionTimeout,
 	ChannelType channelType,
-	TimeSpan requestedHeartbeat
+	TimeSpan requestedHeartbeat,
+	ushort maxChannelPoolSize
 ) : IRabbitMqChannelManager
 {
-	private const int MaxChannelPool = 90;
-
 	private readonly SemaphoreSlim _connectionLock = new(1);
 	private IConnection? _connection;
 
 	private readonly ConcurrentBag<IChannel> _availableChannelPool = new();
 	private int _usedChannelCount;
-
-	public RabbitMqChannelManager(
-		Uri uri,
-		string connectionName,
-		TimeSpan connectionTimeout,
-		ChannelType channelType
-	)
-		: this(uri, connectionName, connectionTimeout, channelType, ConnectionFactory.DefaultHeartbeat)
-	{
-	}
 
 	public async Task<ChannelContainer> AcquireChannelAsync()
 	{
@@ -59,6 +48,7 @@ public class RabbitMqChannelManager(
 				Uri = uri,
 				AutomaticRecoveryEnabled = true,
 				RequestedHeartbeat = requestedHeartbeat,
+				RequestedChannelMax = maxChannelPoolSize,
 			};
 
 			_connection = await connectionFactory.CreateConnectionAsync(connectionName + ":" + channelType);
@@ -83,9 +73,6 @@ public class RabbitMqChannelManager(
 				}
 			}
 		}
-
-		if (_usedChannelCount > MaxChannelPool)
-			throw new Exception("Too many channel allocated");
 
 		var channel = await _connection!.CreateChannelAsync();
 
