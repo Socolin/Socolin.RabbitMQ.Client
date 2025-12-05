@@ -4,7 +4,7 @@
 		<TargetFramework>netstandard2.0</TargetFramework>
 		<LangVersion>latest</LangVersion>
 		<Nullable>enable</Nullable>
-		<Version>2.1.0</Version>
+		<Version>2.1.1</Version>
 		<Description>A simple wrapper around RabbitMQ.Client to make it easier to use.</Description>
 		<Authors>Bertrand Provost</Authors>
 		<RepositoryUrl>https://github.com/Socolin/Socolin.RabbitMQ.Client</RepositoryUrl>
