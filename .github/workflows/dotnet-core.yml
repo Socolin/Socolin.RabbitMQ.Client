@@ -26,7 +26,7 @@ jobs:
       run: dotnet test --configuration Release --no-restore --no-build Socolin.RabbitMQ.Client.Tests.Unit
     - name: dotnet pack
       run: |
-        dotnet pack -o tmp --include-sources --include-symbols
+        dotnet pack -o tmp --include-source --include-symbols
     - name: NuGet login (OIDC → temp API key)
       uses: NuGet/login@v1
       id: login
