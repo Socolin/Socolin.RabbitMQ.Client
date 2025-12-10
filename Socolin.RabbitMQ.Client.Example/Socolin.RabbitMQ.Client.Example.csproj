@@ -4,14 +4,15 @@
 		<TargetFramework>net8.0</TargetFramework>
 		<RootNamespace>Socolin.RabbitMQ.Client.example</RootNamespace>
 		<OutputType>Exe</OutputType>
+		<IsPackable>false</IsPackable>
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\Socolin.RabbitMQ.Client\Socolin.RabbitMQ.Client.csproj" />
+		<ProjectReference Include="..\Socolin.RabbitMQ.Client\Socolin.RabbitMQ.Client.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 	</ItemGroup>
 
 </Project>
