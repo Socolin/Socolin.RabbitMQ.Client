@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Threading;
 using System.Threading.Tasks;
 using Socolin.RabbitMQ.Client.Exceptions;
 using Socolin.RabbitMQ.Client.Pipes.Consumer;
@@ -48,6 +49,12 @@ public class ConsumerOptionsBuilder<T> where T : class
 	public ConsumerOptionsBuilder<T> WithCustomPipe(Func<IConsumerPipeContext<T>, Func<Task>, Task> pipe)
 	{
 		_customPipes.Add(new DefaultConsumerPipeBuilder<T>(() => new CustomConsumerPipe<T>(pipe)));
+		return this;
+	}
+
+	public ConsumerOptionsBuilder<T> WithCustomPipe(Func<IConsumerPipeContext<T>, Func<Task>, CancellationToken, Task> pipe)
+	{
+		_customPipes.Add(new DefaultConsumerPipeBuilder<T>(() => new CustomConsumerPipe2<T>(pipe)));
 		return this;
 	}
 
