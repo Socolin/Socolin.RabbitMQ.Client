@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Threading;
 using System.Threading.Tasks;
 using Socolin.RabbitMQ.Client.Exceptions;
@@ -112,7 +113,20 @@ public class ConsumerOptionsBuilder<T> where T : class
 	/// </summary>
 	/// <param name="pipeBuilder"></param>
 	/// <returns></returns>
+	[Obsolete("Use WithMessageAck instead")]
+	[EditorBrowsable(EditorBrowsableState.Never)]
 	public ConsumerOptionsBuilder<T> WitheMessageAck(IConsumerPipeBuilder<T> pipeBuilder)
+	{
+		_messageAcknowledgmentPipeBuilder = pipeBuilder;
+		return this;
+	}
+
+	/// <summary>
+	/// Configure the pipe responsible to Ack/Reject the messages
+	/// </summary>
+	/// <param name="pipeBuilder"></param>
+	/// <returns></returns>
+	public ConsumerOptionsBuilder<T> WithMessageAck(IConsumerPipeBuilder<T> pipeBuilder)
 	{
 		_messageAcknowledgmentPipeBuilder = pipeBuilder;
 		return this;
