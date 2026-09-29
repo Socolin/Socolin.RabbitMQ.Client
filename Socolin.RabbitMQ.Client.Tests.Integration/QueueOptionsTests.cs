@@ -132,15 +132,15 @@ public class QueueOptionsTests
 			.Build();
 
 		await _serviceClient.CreateQueueAsync(_queueName, options);
-		await _serviceClient.EnqueueMessageAsync(_queueName, "priority-1", options: new EnqueueMessageOptions { Priority = 1 });
+		await _serviceClient.EnqueueMessageAsync(_queueName, "priority-1", new EnqueueMessageOptions { Priority = 1 });
 		await _serviceClient.EnqueueMessageAsync(_queueName, "priority-2", "application/json", new EnqueueMessageOptions { Priority = 2 });
-		await _serviceClient.EnqueueMessageToExchangeAsync(RabbitMqConstants.DefaultExchangeName, _queueName, "priority-3", options: new EnqueueMessageOptions { Priority = 3 });
+		await _serviceClient.EnqueueMessageToExchangeAsync(RabbitMqConstants.DefaultExchangeName, _queueName, "priority-3", new EnqueueMessageOptions { Priority = 3 });
 		await _serviceClient.EnqueueMessageToExchangeAsync(RabbitMqConstants.DefaultExchangeName, _queueName, "priority-4", "application/json", new EnqueueMessageOptions { Priority = 4 });
 
 		var queueClient = _serviceClient.CreateQueueClient(_queueName);
-		await queueClient.EnqueueMessageAsync("priority-5", options: new EnqueueMessageOptions { Priority = 5 });
+		await queueClient.EnqueueMessageAsync("priority-5", new EnqueueMessageOptions { Priority = 5 });
 		await queueClient.EnqueueMessageAsync("priority-6", "application/json", new EnqueueMessageOptions { Priority = 6 });
-		await queueClient.EnqueueMessageAsync("no-priority", options: new EnqueueMessageOptions());
+		await queueClient.EnqueueMessageAsync("no-priority", new EnqueueMessageOptions());
 
 		using var channelContainer = await _rabbitMqConnectionManager.AcquireChannelAsync(ChannelType.Consumer);
 		var messages = new List<string>();

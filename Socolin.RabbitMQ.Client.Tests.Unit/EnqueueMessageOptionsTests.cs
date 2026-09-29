@@ -41,7 +41,7 @@ public class EnqueueMessageOptionsTests
         var options = new EnqueueMessageOptions { Priority = 32 };
 
         var exception = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
-            async () => await client.EnqueueMessageAsync("message", options: options));
+            async () => await client.EnqueueMessageAsync("message", options));
 
         Assert.That(exception!.ParamName, Is.EqualTo("priority"));
     }
