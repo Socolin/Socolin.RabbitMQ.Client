@@ -30,6 +30,7 @@ public class QueueOptionsTests
 			.WithRetry(TimeSpan.FromSeconds(15), null, TimeSpan.FromSeconds(1))
 			.WithConnectionManager(_rabbitMqConnectionManager)
 			.WithDefaultSerializer(message => Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(message)), "application/json")
+			.WithSerializer(message => Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(message)), "application/json")
 			.Build();
 		_serviceClient = new RabbitMqServiceClient(options);
 		_queueName = BaseQueueName + Guid.NewGuid();
@@ -121,6 +122,49 @@ public class QueueOptionsTests
 		(await _serviceClient.GetMessageCountInQueueAsync(_queueName)).Should().Be(1);
 		await Task.Delay(TimeSpan.FromMilliseconds(200));
 		(await _serviceClient.GetMessageCountInQueueAsync(_queueName)).Should().Be(0);
+	}
+
+	[Test]
+	public async Task CanEnqueueMessages_WithPriority()
+	{
+		var options = new CreateQueueOptionsBuilder(QueueType.Classic)
+			.WithMaximumNumberOfPriorityLevel(9)
+			.Build();
+
+		await _serviceClient.CreateQueueAsync(_queueName, options);
+		await _serviceClient.EnqueueMessageAsync(_queueName, "priority-1", options: new EnqueueMessageOptions { Priority = 1 });
+		await _serviceClient.EnqueueMessageAsync(_queueName, "priority-2", "application/json", new EnqueueMessageOptions { Priority = 2 });
+		await _serviceClient.EnqueueMessageToExchangeAsync(RabbitMqConstants.DefaultExchangeName, _queueName, "priority-3", options: new EnqueueMessageOptions { Priority = 3 });
+		await _serviceClient.EnqueueMessageToExchangeAsync(RabbitMqConstants.DefaultExchangeName, _queueName, "priority-4", "application/json", new EnqueueMessageOptions { Priority = 4 });
+
+		var queueClient = _serviceClient.CreateQueueClient(_queueName);
+		await queueClient.EnqueueMessageAsync("priority-5", options: new EnqueueMessageOptions { Priority = 5 });
+		await queueClient.EnqueueMessageAsync("priority-6", "application/json", new EnqueueMessageOptions { Priority = 6 });
+		await queueClient.EnqueueMessageAsync("no-priority", options: new EnqueueMessageOptions());
+
+		using var channelContainer = await _rabbitMqConnectionManager.AcquireChannelAsync(ChannelType.Consumer);
+		var messages = new List<string>();
+		for (var i = 0; i < 6; i++)
+		{
+			var message = await channelContainer.Channel.BasicGetAsync(_queueName, true);
+			message!.BasicProperties.Priority.Should().Be((byte)(6 - i));
+			messages.Add(JsonConvert.DeserializeObject<string>(Encoding.UTF8.GetString(message!.Body.Span))!);
+		}
+
+		var messageWithoutPriority = await channelContainer.Channel.BasicGetAsync(_queueName, true);
+		messages.Add(JsonConvert.DeserializeObject<string>(Encoding.UTF8.GetString(messageWithoutPriority!.Body.Span))!);
+
+		messages.Should().Equal(
+			"priority-6",
+			"priority-5",
+			"priority-4",
+			"priority-3",
+			"priority-2",
+			"priority-1",
+			"no-priority"
+		);
+
+		messageWithoutPriority.BasicProperties.IsPriorityPresent().Should().BeFalse();
 	}
 
 

@@ -21,10 +21,10 @@ public interface IRabbitMqServiceClient
 	Task CreateQueueAsync(string queueName, bool durable = true, bool exclusive = false, bool autoDelete = false, IDictionary<string, object?>? arguments = null);
 	Task PurgeQueueAsync(string queueName);
 	Task DeleteQueueAsync(string queueName, bool ifUnused, bool ifEmpty);
-	Task EnqueueMessageAsync(string queueName, object message, Dictionary<string, object>? contextItems = null);
-	Task EnqueueMessageAsync(string queueName, object message, string contentType);
-	Task EnqueueMessageToExchangeAsync(string exchangeName, string routingKey, object message, Dictionary<string, object>? contextItems = null);
-	Task EnqueueMessageToExchangeAsync(string exchangeName, string routingKey, object message, string contentType);
+	Task EnqueueMessageAsync(string queueName, object message, Dictionary<string, object>? contextItems = null, EnqueueMessageOptions? options = null);
+	Task EnqueueMessageAsync(string queueName, object message, string contentType, EnqueueMessageOptions? options = null);
+	Task EnqueueMessageToExchangeAsync(string exchangeName, string routingKey, object message, Dictionary<string, object>? contextItems = null, EnqueueMessageOptions? options = null);
+	Task EnqueueMessageToExchangeAsync(string exchangeName, string routingKey, object message, string contentType, EnqueueMessageOptions? options = null);
 	Task<IActiveConsumer> StartListeningQueueAsync<T>(string queueName, ConsumerOptions<T> consumerOptions, ProcessorMessageDelegate<T> messageProcessor) where T : class;
 	RabbitMqEnqueueQueueClient CreateQueueClient(string queueName);
 	RabbitMqEnqueueQueueClient CreateQueueClient(string exchangeName, string routingKey);
@@ -37,7 +37,7 @@ public class RabbitMqServiceClient : IRabbitMqServiceClient
 	private readonly Lazy<ReadOnlyMemory<IClientPipe>> _messagePipeline;
 	private readonly Lazy<ReadOnlyMemory<IClientPipe>> _actionPipeline;
 	private readonly Lazy<ReadOnlyMemory<IClientPipe>> _consumerPipeline;
-	private RabbitMqServiceClientOptions _options;
+	private readonly RabbitMqServiceClientOptions _options;
 
 	public RabbitMqServiceClient(RabbitMqServiceClientOptions options)
 	{
@@ -133,29 +133,41 @@ public class RabbitMqServiceClient : IRabbitMqServiceClient
 		await ClientPipe.ExecutePipelineAsync(new ClientPipeContextAction(async (channel, _) => { await channel.QueueDeleteAsync(queueName, ifUnused, ifEmpty); }), _actionPipeline.Value);
 	}
 
-	public Task EnqueueMessageAsync(string queueName, object message, string contentType)
+	public Task EnqueueMessageAsync(string queueName, object message, string contentType, EnqueueMessageOptions? options = null)
 	{
 		return EnqueueMessageAsync(queueName,
 			message,
 			new Dictionary<string, object>
 			{
 				[SerializerClientPipe.ContentTypeKeyName] = contentType
-			}
-		);
-	}
-
-	public async Task EnqueueMessageAsync(string queueName, object message, Dictionary<string, object>? contextItems = null)
-	{
-		await ClientPipe.ExecutePipelineAsync(new ClientPipeContextMessage(message, contextItems)
-			{
-				ExchangeName = RabbitMqConstants.DefaultExchangeName,
-				RoutingKey = queueName
 			},
-			_messagePipeline.Value
+			options
 		);
 	}
 
-	public Task EnqueueMessageToExchangeAsync(string exchangeName, string routingKey, object message, string contentType)
+	public async Task EnqueueMessageAsync(
+		string queueName,
+		object message,
+		Dictionary<string, object>? contextItems = null,
+		EnqueueMessageOptions? options = null
+	)
+	{
+		var pipeMessage = new ClientPipeContextMessage(message, contextItems)
+		{
+			ExchangeName = RabbitMqConstants.DefaultExchangeName,
+			RoutingKey = queueName
+		};
+		pipeMessage.SetPriority(options?.Priority);
+		await ClientPipe.ExecutePipelineAsync(pipeMessage, _messagePipeline.Value);
+	}
+
+	public Task EnqueueMessageToExchangeAsync(
+		string exchangeName,
+		string routingKey,
+		object message,
+		string contentType,
+		EnqueueMessageOptions? options = null
+	)
 	{
 		return EnqueueMessageToExchangeAsync(exchangeName,
 			routingKey,
@@ -163,19 +175,26 @@ public class RabbitMqServiceClient : IRabbitMqServiceClient
 			new Dictionary<string, object>
 			{
 				[SerializerClientPipe.ContentTypeKeyName] = contentType
-			}
+			},
+			options
 		);
 	}
 
-	public async Task EnqueueMessageToExchangeAsync(string exchangeName, string routingKey, object message, Dictionary<string, object>? contextItems = null)
+	public async Task EnqueueMessageToExchangeAsync(
+		string exchangeName,
+		string routingKey,
+		object message,
+		Dictionary<string, object>? contextItems = null,
+		EnqueueMessageOptions? options = null
+	)
 	{
-		await ClientPipe.ExecutePipelineAsync(new ClientPipeContextMessage(message, contextItems)
-			{
-				ExchangeName = exchangeName,
-				RoutingKey = routingKey
-			},
-			_messagePipeline.Value
-		);
+		var pipeMessage = new ClientPipeContextMessage(message, contextItems)
+		{
+			ExchangeName = exchangeName,
+			RoutingKey = routingKey
+		};
+		pipeMessage.SetPriority(options?.Priority);
+		await ClientPipe.ExecutePipelineAsync(pipeMessage, _messagePipeline.Value);
 	}
 
 	public async Task<IActiveConsumer> StartListeningQueueAsync<T>(string queueName, ConsumerOptions<T> consumerOptions, ProcessorMessageDelegate<T> messageProcessor) where T : class

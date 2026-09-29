@@ -20,6 +20,15 @@ public class ClientPipeContextMessage : IClientPipeContext
 		Items = items ?? new Dictionary<string, object>();
 	}
 
+	internal void SetPriority(byte? priority)
+	{
+		if (priority > 31)
+			throw new ArgumentOutOfRangeException(nameof(priority), priority, "Priority must be between 0 and 31.");
+
+		if (priority.HasValue)
+			BasicProperties.Priority = priority.Value;
+	}
+
 	public ChannelContainer? ChannelContainer { get; set; }
 	public IChannel? Channel => ChannelContainer?.Channel;
 }
