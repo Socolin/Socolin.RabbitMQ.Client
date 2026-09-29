@@ -28,9 +28,12 @@ jobs:
       run: |
         dotnet pack -o tmp --include-source --include-symbols
     - name: NuGet login (OIDC → temp API key)
+      if: github.event_name == 'push'
       uses: NuGet/login@v1
       id: login
       with:
         user: ${{ secrets.NUGET_USER }}
     - name: NuGet push
+      if: github.event_name == 'push'
       run: dotnet nuget push tmp/*.nupkg --api-key ${{steps.login.outputs.NUGET_API_KEY}} --source https://api.nuget.org/v3/index.json --skip-duplicate
+
