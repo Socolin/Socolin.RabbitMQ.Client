@@ -1,3 +1,10 @@
+## 2.2.0 - 2026-09-29
+
+- Add optional `EnqueueMessageOptions` parameters to queue, exchange, and reusable queue client enqueue APIs
+- Add nullable per-message priority support with values from 0 to 9
+- Update `RabbitMQ.Client` from 7.0.0 to 7.2.2 and `JetBrains.Annotations` from 2024.3.0 to 2026.2.0
+- Update example and test NuGet packages
+
 ## 2.1.4 - 2026-01-23
 
 - Fix typo, fix #2
