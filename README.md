@@ -27,6 +27,7 @@ var createQueueOption = new CreateQueueOptionsBuilder(QueueType.Classic)
     .Durable()
     .WithDeadLetterExchange(RabbitMqConstants.DefaultExchangeName)
     .WithDeadLetterRoutingKey(queueName + "-Error")
+    .WithMaximumNumberOfPriorityLevel(9)
     .Build();
 await serviceClient.CreateQueueAsync(queueName, createQueueOption);
 
@@ -48,12 +49,13 @@ var activeConsumer = await serviceClient.StartListeningQueueAsync(queueName, con
 });
 
 // Enqueue a message
-await serviceClient.EnqueueMessageAsync(queueName, "some-message");
+// Priority is only honored by queues configured with WithMaximumNumberOfPriorityLevel.
+await serviceClient.EnqueueMessageAsync(queueName, "some-message", options: new EnqueueMessageOptions { Priority = 5 });
 await Task.Delay(100);
 
 // Enqueue using EnqueueQueueClient
 var queueClient = serviceClient.CreateQueueClient(queueName);
-await queueClient.EnqueueMessageAsync("some-other-message");
+await queueClient.EnqueueMessageAsync("some-other-message", options: new EnqueueMessageOptions { Priority = 9 });
 
 // Cancel listening
 activeConsumer.Cancel();
@@ -200,4 +202,3 @@ You can use the field `Context.Items` to share value between pipes, and with the
 Custom pipes can be inserted in the pipeline by adding them into `ConsumerOptions.Customs`  or by using the builder `ConsumerOptionsBuilder.WithCustomPipe()`
 
 You can use the field `Context.Items` to share value between pipes and with the processor function.
-
