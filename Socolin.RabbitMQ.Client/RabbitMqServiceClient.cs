@@ -23,7 +23,8 @@ public interface IRabbitMqServiceClient
 	Task DeleteQueueAsync(string queueName, bool ifUnused, bool ifEmpty);
 	Task EnqueueMessageAsync(string queueName, object message, Dictionary<string, object>? contextItems = null);
 	Task EnqueueMessageAsync(string queueName, object message, EnqueueMessageOptions options);
-	Task EnqueueMessageAsync(string queueName, object message, string contentType, EnqueueMessageOptions? options = null);
+	Task EnqueueMessageAsync(string queueName, object message, string contentType);
+	Task EnqueueMessageAsync(string queueName, object message, string contentType, EnqueueMessageOptions options);
 	Task EnqueueMessageToExchangeAsync(string exchangeName, string routingKey, object message, Dictionary<string, object>? contextItems = null);
 	Task EnqueueMessageToExchangeAsync(string exchangeName, string routingKey, object message, EnqueueMessageOptions options);
 	Task EnqueueMessageToExchangeAsync(string exchangeName, string routingKey, object message, string contentType, EnqueueMessageOptions? options = null);
@@ -129,13 +130,18 @@ public class RabbitMqServiceClient : IRabbitMqServiceClient
 		await ClientPipe.ExecutePipelineAsync(new ClientPipeContextAction(async (channel, _) => { await channel.QueueDeleteAsync(queueName, ifUnused, ifEmpty); }), _actionPipeline.Value);
 	}
 
-	public Task EnqueueMessageAsync(string queueName, object message, string contentType, EnqueueMessageOptions? options = null)
+	public Task EnqueueMessageAsync(string queueName, object message, string contentType)
+	{
+		return EnqueueMessageAsync(queueName, message, contentType, EnqueueMessageOptions.Default);
+	}
+
+	public Task EnqueueMessageAsync(string queueName, object message, string contentType, EnqueueMessageOptions options)
 	{
 		return EnqueueMessageAsync(queueName,
 			message,
-			(options ?? EnqueueMessageOptions.Default) with
+			options with
 			{
-				ContextItems = new Dictionary<string, object>(options?.ContextItems ?? [])
+				ContextItems = new Dictionary<string, object>(options.ContextItems ?? [])
 				{
 					[SerializerClientPipe.ContentTypeKeyName] = contentType
 				},
