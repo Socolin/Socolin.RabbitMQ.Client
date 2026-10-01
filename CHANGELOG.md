@@ -1,3 +1,7 @@
+## 2.2.2 - 2026-10-01
+
+- Add a new method overload to preserve backward compatibility
+
 ## 2.2.0 - 2026-09-29
 
 - Add optional `EnqueueMessageOptions` parameters to queue, exchange, and reusable queue client enqueue APIs
